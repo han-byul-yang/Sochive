@@ -49,7 +49,6 @@ function RootLayoutNav() {
   const checkOnboarding = async () => {
     try {
       const value = await AsyncStorage.getItem("hasSeenOnboarding");
-      console.log("value", value);
       if (value === null) {
         console.log("first launch");
         setIsFirstLaunch(true);

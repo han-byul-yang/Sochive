@@ -13,11 +13,17 @@ const MAPPING = {
   "paperplane.fill": "send",
   "chevron.left.forwardslash.chevron.right": "code",
   "chevron.right": "chevron-right",
+  "chevron.left": "chevron-left",
   "photo.on.rectangle": "photo-library",
   "heart.fill": "favorite",
   gear: "settings",
   plus: "add",
   grid: "grid-view",
+  archive: "archive",
+  xmark: "close",
+  pencil: "edit",
+  image: "image",
+  camera: "camera-alt",
 } as Partial<
   Record<
     import("expo-symbols").SymbolViewProps["name"],

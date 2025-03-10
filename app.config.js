@@ -48,8 +48,6 @@ module.exports = {
     },
 
     extra: {
-      apiUrl: process.env.API_URL,
-      stripePublishableKey: process.env.STRIPE_PUBLISHABLE_KEY,
       cloudinaryUrl: process.env.CLOUDINARY_URL,
       uploadPreset: process.env.CLOUDINARY_UPLOAD_PRESET,
       firebaseApiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -60,17 +58,12 @@ module.exports = {
         process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
       firebaseAppId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
       firebaseMeasurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
-      geminiApiKey: process.env.GEMINI_API_KEY,
-      developmentApiUrl: {
-        android: process.env.API_URL,
-        ios: process.env.API_URL,
-      },
       scheme: process.env.SCHEME,
       androidClientId: process.env.GOOGLE_ANDROID_CLIENT_ID,
       iosClientId: process.env.GOOGLE_IOS_CLIENT_ID,
       webClientId: process.env.GOOGLE_WEB_CLIENT_ID,
       eas: {
-        projectId: "132c6ece-7387-4706-bd3e-39ba1a12da23",
+        projectId: "dc65718c-c142-4b2e-8f14-fcd7b2b18fbd",
       },
     },
   },
