@@ -14,6 +14,7 @@ const MAPPING = {
   "chevron.left.forwardslash.chevron.right": "code",
   "chevron.right": "chevron-right",
   "chevron.left": "chevron-left",
+  "chevron.down": "keyboard-arrow-down",
   "photo.on.rectangle": "photo-library",
   "heart.fill": "favorite",
   gear: "settings",
@@ -24,6 +25,12 @@ const MAPPING = {
   pencil: "edit",
   image: "image",
   camera: "camera-alt",
+  check: "check",
+  favorite: "favorite",
+  whatshot: "whatshot",
+  palette: "palette",
+  eco: "eco",
+  storefront: "storefront",
 } as Partial<
   Record<
     import("expo-symbols").SymbolViewProps["name"],

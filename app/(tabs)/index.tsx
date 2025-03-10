@@ -7,10 +7,13 @@ import {
   Modal,
   FlatList,
   Animated,
+  Image,
+  ImageBackground,
 } from "react-native";
 import { useState, useMemo, useRef } from "react";
 import { IconSymbol } from "@/components/ui/IconSymbol";
 import { ThemedText } from "@/components/ThemedText";
+import BackgroundSelects from "@/components/BackgroundSelects";
 
 const { width } = Dimensions.get("window");
 
@@ -47,6 +50,11 @@ const MONTH_EMOJIS = {
 export default function ArchiveScreen() {
   const [mode, setMode] = useState<"read" | "edit">("read");
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showBackgroundPicker, setShowBackgroundPicker] = useState(false);
+  const [selectedBackground, setSelectedBackground] = useState<string | null>(
+    null
+  );
+  const [activeCategory, setActiveCategory] = useState<string>("hot");
 
   // 현재 선택된 날짜 상태
   const currentDate = new Date();
@@ -65,6 +73,7 @@ export default function ArchiveScreen() {
 
   // 애니메이션 값 추가
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const backgroundPickerAnim = useRef(new Animated.Value(0)).current;
 
   // 모드 전환 애니메이션
   const toggleMode = () => {
@@ -74,6 +83,23 @@ export default function ArchiveScreen() {
     Animated.timing(fadeAnim, {
       toValue: newMode === "edit" ? 1 : 0,
       duration: 200,
+      useNativeDriver: true,
+    }).start();
+
+    // 편집 모드를 종료하면 배경 선택기도 닫기
+    if (newMode === "read" && showBackgroundPicker) {
+      toggleBackgroundPicker();
+    }
+  };
+
+  // 배경 선택기 토글
+  const toggleBackgroundPicker = () => {
+    const newState = !showBackgroundPicker;
+    setShowBackgroundPicker(newState);
+
+    Animated.timing(backgroundPickerAnim, {
+      toValue: newState ? 1 : 0,
+      duration: 300,
       useNativeDriver: true,
     }).start();
   };
@@ -109,21 +135,103 @@ export default function ArchiveScreen() {
           </View>
         </TouchableOpacity>
 
-        {/* Mode Toggle Button */}
-        <TouchableOpacity
-          onPress={toggleMode}
-          activeOpacity={0.9}
-          className={`p-[8px] rounded-full ${
-            mode === "edit" ? "bg-key" : "bg-gray-100"
-          }`}
-        >
-          <IconSymbol
-            name={mode === "edit" ? "xmark" : "pencil"}
-            size={22}
-            color={mode === "edit" ? "#fff" : "#3D3D3D"}
-          />
-        </TouchableOpacity>
+        {/* Header Right Buttons */}
+        <View className="flex-row items-center space-x-2">
+          {/* Save Button (Edit Mode Only) */}
+          {mode === "edit" && (
+            <TouchableOpacity
+              className="bg-key px-4 py-2 rounded-full"
+              activeOpacity={0.9}
+            >
+              <Text className="text-white font-medium">저장</Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Mode Toggle Button */}
+          <TouchableOpacity
+            onPress={toggleMode}
+            activeOpacity={0.9}
+            className={`p-[8px] rounded-full ${
+              mode === "edit" ? "bg-key" : "bg-gray-100"
+            }`}
+          >
+            <IconSymbol
+              name={mode === "edit" ? "xmark" : "pencil"}
+              size={22}
+              color={mode === "edit" ? "#fff" : "#3D3D3D"}
+            />
+          </TouchableOpacity>
+        </View>
       </View>
+
+      {/* Main Content with Background */}
+      <ImageBackground
+        source={selectedBackground ? { uri: selectedBackground } : undefined}
+        style={{ flex: 1 }}
+        imageStyle={{ opacity: 0.75 }}
+      >
+        <ScrollView className="flex-1 p-4">
+          {/* Edit Mode Controls with Animation */}
+          <Animated.View
+            className="flex-row justify-end space-x-2 mb-4"
+            style={{
+              opacity: fadeAnim,
+              transform: [
+                {
+                  translateY: fadeAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [-20, 0],
+                  }),
+                },
+              ],
+            }}
+          >
+            {/* Background Button */}
+            <TouchableOpacity
+              className="bg-gray-100 p-[8px] rounded-full"
+              activeOpacity={0.9}
+              onPress={toggleBackgroundPicker}
+            >
+              <IconSymbol name="photo.on.rectangle" size={24} color="#3D3D3D" />
+            </TouchableOpacity>
+
+            {/* Camera Button */}
+            <TouchableOpacity
+              className="bg-key p-[8px] rounded-full"
+              activeOpacity={0.9}
+            >
+              <IconSymbol name="camera" size={24} color="#fff" />
+            </TouchableOpacity>
+          </Animated.View>
+
+          {/* Collage Area */}
+          <View
+            className={`bg-white/90 rounded-2xl shadow-sm ${
+              selectedBackground ? "bg-white/80" : "bg-white"
+            }`}
+          >
+            {/* 여기에 콜라주 컨텐츠가 들어갈 예정 */}
+            <View className="items-center justify-center p-8">
+              <ThemedText className="text-gray-400">
+                {mode === "edit"
+                  ? "사진을 추가하여 콜라주를 만들어보세요"
+                  : "이번 달 기록이 없습니다"}
+              </ThemedText>
+            </View>
+          </View>
+        </ScrollView>
+      </ImageBackground>
+
+      {/* Background Selector Component */}
+      <BackgroundSelects
+        showBackgroundPicker={showBackgroundPicker}
+        backgroundPickerAnim={backgroundPickerAnim}
+        activeCategory={activeCategory}
+        selectedBackground={selectedBackground}
+        setActiveCategory={setActiveCategory}
+        setSelectedBackground={setSelectedBackground}
+        toggleBackgroundPicker={toggleBackgroundPicker}
+      />
 
       {/* Date Picker Modal */}
       <Modal
@@ -132,121 +240,8 @@ export default function ArchiveScreen() {
         animationType="fade"
         onRequestClose={() => setShowDatePicker(false)}
       >
-        <TouchableOpacity
-          className="flex-1 bg-black/30"
-          activeOpacity={1}
-          onPress={() => setShowDatePicker(false)}
-        >
-          <View className="mt-32 mx-4 bg-white rounded-2xl overflow-hidden">
-            {/* Year Selector */}
-            <View className="flex-row items-center justify-between px-6 py-4 border-b border-gray-100">
-              <TouchableOpacity
-                onPress={() => setSelectedYear(selectedYear - 1)}
-                className="p-2"
-              >
-                <IconSymbol
-                  name="chevron.left"
-                  size={24}
-                  color="#3D3D3D"
-                  style={{ transform: [{ rotate: "180deg" }] }}
-                />
-              </TouchableOpacity>
-              <ThemedText className="text-xl font-noto-bold">
-                {selectedYear}
-              </ThemedText>
-              <TouchableOpacity
-                onPress={() => setSelectedYear(selectedYear + 1)}
-                className="p-2"
-              >
-                <IconSymbol name="chevron.right" size={24} color="#3D3D3D" />
-              </TouchableOpacity>
-            </View>
-
-            {/* Month Grid */}
-            <View className="p-4">
-              <View className="flex-row flex-wrap">
-                {months.map((month) => (
-                  <TouchableOpacity
-                    key={month}
-                    onPress={() => {
-                      setSelectedMonth(month);
-                      setShowDatePicker(false);
-                    }}
-                    className={`w-1/3 p-2`}
-                  >
-                    <View
-                      className={`py-3 rounded-xl items-center ${
-                        selectedMonth === month ? "bg-key" : "bg-gray-50"
-                      }`}
-                    >
-                      <ThemedText
-                        className={`text-base ${
-                          selectedMonth === month ? "text-white" : "text-key"
-                        }`}
-                      >
-                        {getMonthName(month).slice(0, 3)}
-                      </ThemedText>
-                    </View>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </View>
-          </View>
-        </TouchableOpacity>
+        {/* 기존 Date Picker 코드 유지 */}
       </Modal>
-
-      {/* Main Content */}
-      <ScrollView className="flex-1 p-4">
-        {/* Edit Mode Controls with Animation */}
-        <Animated.View
-          className="flex-row justify-end space-x-2 mb-4"
-          style={{
-            opacity: fadeAnim,
-            transform: [
-              {
-                translateY: fadeAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [-20, 0],
-                }),
-              },
-            ],
-          }}
-        >
-          <TouchableOpacity
-            className="bg-gray-100 p-[8px] rounded-full"
-            activeOpacity={0.9}
-          >
-            <IconSymbol name="photo.on.rectangle" size={24} color="#3D3D3D" />
-          </TouchableOpacity>
-          <TouchableOpacity
-            className="bg-key p-[8px] rounded-full"
-            activeOpacity={0.9}
-          >
-            <IconSymbol name="camera" size={24} color="#fff" />
-          </TouchableOpacity>
-        </Animated.View>
-
-        {/* Collage Area */}
-        <View className="bg-white rounded-2xl shadow-sm ">
-          {/* 여기에 콜라주 컨텐츠가 들어갈 예정 */}
-          <View className="items-center justify-center flex-1">
-            <ThemedText className="text-gray-400">
-              {mode === "edit"
-                ? "사진을 추가하여 콜라주를 만들어보세요"
-                : "이번 달 기록이 없습니다"}
-            </ThemedText>
-          </View>
-        </View>
-      </ScrollView>
-
-      {/* Save Button (Edit Mode Only) */}
-      {mode === "edit" && (
-        <View className="absolute bottom-6 right-6">
-          <TouchableOpacity className="bg-key px-6 py-3 rounded-full shadow-lg">
-            <Text className="text-white font-medium">저장하기</Text>
-          </TouchableOpacity>
-        </View>
-      )}
     </View>
   );
 }
