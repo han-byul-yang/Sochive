@@ -1,0 +1,105 @@
+[Requirements]
+
+1. Project Overview
+   Technologies (Tools)
+
+expo
+Tailwind CSS: UI styling
+Firebase: Authentication, database, storage, hosting, etc.
+TypeScript: Static type-checking
+Recoil: Global state management
+Main Navigation
+
+Gallery Album Home Screen
+Favorites (Heart) Album
+Settings 2. Detailed Feature Requirements
+2.1 Gallery Album Home Screen
+Add New Gallery Album Button
+
+Allows users to create custom albums.
+Clicking it prompts for an album name, then creates a new album.
+Display Gallery Album List
+
+Shows a list (or thumbnails) of albums the user has created on the home screen.
+Each album can display a cover image or album name.
+Add Gallery Image Button
+
+Lets the user add images to the entire gallery (before selecting a specific album).
+After selecting images, the user can choose an album or place them in a default album.
+2.2 Gallery Album Detail Screen
+Displaying images within a specific album when the user clicks on that album.
+
+Album Image Thumbnails
+
+Shows multiple images in thumbnail form.
+Display AI-generated keywords under each thumbnail.
+Add Image to Album
+
+Button to add new images to the selected album.
+When uploading, automatically run OCR → generate keywords in the background if possible.
+Delete Images
+
+A “Delete” button allows individual or batch deletion.
+For batch deletion: Click “Delete,” then drag/select images (check boxes appear), then confirm deletion.
+Move Images to Another Album
+
+A “Move” button allows you to drag/select images, choose a destination album, and confirm to move them.
+Image View Modes
+
+Small Thumbnail View
+Shows an image preview with AI-generated keywords underneath.
+Large Image View
+Displays AI-generated keywords plus a short description (summary text).
+Long-pressing the image:
+Shows a trash icon at the top → drag to delete
+Shows available folders at the bottom → drag to move the image to another folder
+2.3 Image Detail View (Single Image)
+When a user taps an image to see a larger version (full-screen mode).
+
+Swipe Navigation
+
+Swiping left/right shows the next/previous image.
+Image Footer Buttons
+
+Text Extraction
+When tapped, displays OCR results.
+Highlightable areas appear in white, while the rest is dimmed. Users can drag over the white areas to copy text.
+Crop
+Allows the user to crop the image, then either save as a new file or overwrite the original.
+Memo
+Saves/edits/deletes notes related to the screenshot (including extracted text).
+If a memo exists, show a small memo preview when tapping the image; pulling it up reveals the full memo.
+Highlight
+On tap, lets the user pick a highlight color, then apply it to the image, saving as new or overwriting.
+Bookmark/Like
+A heart button to add the image to the Favorites album.
+Delete Button
+Deletes the current image.
+Move to Another Album
+Moves the current image to a different album.
+Memo Display Method
+
+When the image is opened, a small part of the memo appears at the bottom; dragging up reveals the full memo.
+2.4 Favorites (Heart) Album
+View Liked Images
+Displays all images marked with the favorite (heart) icon.
+Manage Image List
+Removing the heart icon removes the image from this album.
+Tapping an image shows the same image detail view as elsewhere.
+2.5 Settings
+Automatic Backup
+
+Toggle on/off automatic uploads to Firebase Storage (or another cloud).
+Configure backup frequency (daily, weekly, manual, etc.).
+Dark Mode
+
+Toggle between light and dark UI themes.
+Privacy Policy
+
+Provide an in-app link or screen to view the detailed policy.
+Terms of Service
+
+Outline usage terms, copyright, etc.
+App Version
+
+Show the current version of the app.
