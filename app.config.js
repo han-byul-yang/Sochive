@@ -7,16 +7,9 @@ module.exports = {
     icon: "./assets/images/logo.png",
     scheme: "sochive",
     userInterfaceStyle: "automatic",
-    newArchEnabled: true,
-    cli: {
-      appVersionSource: "remote",
-    },
     ios: {
       bundleIdentifier: "com.sochive.app",
       supportsTablet: true,
-      infoPlist: {
-        ITSAppUsesNonExemptEncryption: false,
-      },
     },
     android: {
       config: {
@@ -51,7 +44,6 @@ module.exports = {
       ],
     ],
     experiments: {
-      turboModules: true,
       typedRoutes: true,
     },
 

@@ -7,6 +7,7 @@ module.exports = {
       colors: {
         "tab-inactive": "#B7B7B7",
         "tab-active": "#A888B5",
+        key: "#3D3D3D",
         font: "#1E201E",
         bg: "#fcfcfc",
       },

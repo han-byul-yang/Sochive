@@ -31,9 +31,7 @@ import {
 
 import { useColorScheme } from "@/hooks/useColorScheme";
 import useAuth, { AuthProvider } from "@/contexts/AuthContext";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { RecoilRoot } from "recoil";
-import { ActionSheetProvider } from "@expo/react-native-action-sheet";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -41,7 +39,6 @@ import { auth } from "@/lib/firebase";
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
-const queryClient = new QueryClient();
 
 function RootLayoutNav() {
   const segments = useSegments();
@@ -56,7 +53,7 @@ function RootLayoutNav() {
       if (value === null) {
         console.log("first launch");
         setIsFirstLaunch(true);
-        router.replace("/(onBoarding)/onBoarding");
+        //router.replace("/(onBoarding)/onBoarding");
         // await AsyncStorage.setItem("hasSeenOnboarding", "true");
         return true;
       } else {
@@ -150,79 +147,20 @@ export default function RootLayout() {
   //     });
   // }, []);
 
-  const checkOnboarding = async () => {
-    try {
-      const value = await AsyncStorage.getItem("hasSeenOnboarding");
-      console.log("value", value);
-      if (value === null) {
-        console.log("first launch");
-        setIsFirstLaunch(true);
-        router.replace("/(onBoarding)/onBoarding");
-        // await AsyncStorage.setItem("hasSeenOnboarding", "true");
-        return true;
-      } else {
-        setIsFirstLaunch(false);
-      }
-    } catch (error) {
-      console.error("Error reading AsyncStorage:", error);
-      setIsFirstLaunch(false);
-    }
-  };
-
-  useEffect(() => {
-    async function prepare() {
-      try {
-        await SplashScreen.preventAutoHideAsync();
-        await checkOnboarding(); // 예제 대기 시간
-      } catch (e) {
-        console.warn(e);
-      } finally {
-        setTimeout(async () => {
-          await SplashScreen.hideAsync();
-        }, 3000);
-      }
-    }
-    prepare();
-  }, []);
-
-  useEffect(() => {
-    const user = auth.currentUser;
-    const verified = user?.emailVerified;
-    if (loading) return;
-    const inAuthGroup = segments[0] === "(auth)";
-    if (isFirstLaunch) return;
-    if (!user || !verified) {
-      if (!inAuthGroup) {
-        const redirectPath = !user ? "/(auth)/login" : "/(auth)/emailVerify";
-        router.replace(redirectPath);
-      }
-    } else {
-      if (inAuthGroup) {
-        router.replace("/(tabs)");
-      }
-    }
-  }, [loading, router]);
-
   return (
-    <ActionSheetProvider>
-      <AuthProvider>
-        <RecoilRoot>
-          <QueryClientProvider client={queryClient}>
-            <ThemeProvider
-              value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
-            >
-              <GestureHandlerRootView style={{ flex: 1 }}>
-                <SafeAreaView className="flex-1 bg-[#fcfcfc]">
-                  <RootLayoutNav />
-                  <StatusBar
-                    style={colorScheme === "dark" ? "light" : "dark"}
-                  />
-                </SafeAreaView>
-              </GestureHandlerRootView>
-            </ThemeProvider>
-          </QueryClientProvider>
-        </RecoilRoot>
-      </AuthProvider>
-    </ActionSheetProvider>
+    <AuthProvider>
+      <RecoilRoot>
+        <ThemeProvider
+          value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
+        >
+          <GestureHandlerRootView style={{ flex: 1 }}>
+            <SafeAreaView className="flex-1 bg-[#fcfcfc]">
+              <RootLayoutNav />
+              <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
+            </SafeAreaView>
+          </GestureHandlerRootView>
+        </ThemeProvider>
+      </RecoilRoot>
+    </AuthProvider>
   );
 }
