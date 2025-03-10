@@ -20,6 +20,7 @@ import DatePickerModal from "@/components/Modals/DatePickerModal";
 import { MaterialIcons } from "@expo/vector-icons";
 import { MONTH_EMOJIS, MONTHS } from "@/constants/Months";
 import ResizeRotateHandle from "@/components/ResizeRotateHandle";
+import PhotoActionSheet from "@/components/PhotoActionSheet";
 
 const { width } = Dimensions.get("window");
 
@@ -44,6 +45,8 @@ export default function ArchiveScreen() {
   const [resizeMode, setResizeMode] = useState<"none" | "resize-rotate">(
     "none"
   );
+  const [showActionSheet, setShowActionSheet] = useState(false);
+  const actionSheetAnim = useRef(new Animated.Value(0)).current;
 
   // 콜라주 영역 크기 참조
   const collageAreaRef = useRef<View>(null);
@@ -184,6 +187,9 @@ export default function ArchiveScreen() {
           newPhotos[index].zIndex = maxZ + 1;
           return newPhotos;
         });
+
+        // 사진 선택 시 액션 시트 표시
+        toggleActionSheet(true);
       },
       onPanResponderMove: (_, gestureState) => {
         setSelectedPhotos((prev) => {
@@ -333,6 +339,8 @@ export default function ArchiveScreen() {
   const handleBackgroundTap = () => {
     if (activePhotoIndex !== null) {
       setActivePhotoIndex(null);
+      // 액션 시트 닫기
+      toggleActionSheet(false);
     }
   };
 
@@ -353,6 +361,44 @@ export default function ArchiveScreen() {
 
     // 활성 사진 인덱스 초기화
     setActivePhotoIndex(null);
+  };
+
+  // 액션 시트 표시/숨김 함수
+  const toggleActionSheet = (show: boolean) => {
+    setShowActionSheet(show);
+    Animated.timing(actionSheetAnim, {
+      toValue: show ? 1 : 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  // 사진 클릭 핸들러 수정
+  const handlePhotoPress = (index: number) => {
+    if (mode === "edit") {
+      setActivePhotoIndex(index);
+      setSelectedPhotos((prev) => {
+        const newPhotos = [...prev];
+        const maxZ = Math.max(...newPhotos.map((p) => p.zIndex));
+        newPhotos[index].zIndex = maxZ + 1;
+        return newPhotos;
+      });
+      toggleActionSheet(true);
+    }
+  };
+
+  // 사진 자르기 핸들러
+  const handleCropPhoto = () => {
+    // 자르기 기능 구현
+    console.log("자르기 기능");
+    toggleActionSheet(false);
+  };
+
+  // 사진 필터 적용 핸들러
+  const handleFilterPhoto = () => {
+    // 필터 적용 기능 구현
+    console.log("필터 적용 기능");
+    toggleActionSheet(false);
   };
 
   return (
@@ -507,9 +553,7 @@ export default function ArchiveScreen() {
                         >
                           <TouchableOpacity
                             activeOpacity={0.9}
-                            onPress={() => {
-                              setActivePhotoIndex(index);
-                            }}
+                            onPress={() => handlePhotoPress(index)}
                           >
                             <Animated.View
                               {...panResponder.panHandlers}
@@ -590,6 +634,15 @@ export default function ArchiveScreen() {
         setSelectedYear={setSelectedYear}
         selectedMonth={selectedMonth}
         setSelectedMonth={setSelectedMonth}
+      />
+
+      {/* Photo Action Sheet */}
+      <PhotoActionSheet
+        visible={showActionSheet}
+        actionSheetAnim={actionSheetAnim}
+        onCrop={handleCropPhoto}
+        onFilter={handleFilterPhoto}
+        onClose={() => toggleActionSheet(false)}
       />
     </View>
   );
