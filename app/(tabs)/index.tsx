@@ -19,6 +19,7 @@ import { pickMultipleImages } from "@/utils/getPhotos";
 import DatePickerModal from "@/components/Modals/DatePickerModal";
 import { MaterialIcons } from "@expo/vector-icons";
 import { MONTH_EMOJIS, MONTHS } from "@/constants/Months";
+import ResizeRotateHandle from "@/components/ResizeRotateHandle";
 
 const { width } = Dimensions.get("window");
 
@@ -205,7 +206,7 @@ export default function ArchiveScreen() {
     });
   };
 
-  // 크기 조절 및 회전을 위한 PanResponder 최적화
+  // 크기 조절 및 회전을 위한 PanResponder 생성 함수
   const createResizeRotatePanResponder = (index: number) => {
     // 현재 회전 및 크기 값을 저장할 변수
     let currentRotation = 0;
@@ -217,13 +218,32 @@ export default function ArchiveScreen() {
         if (activePhotoIndex === index) {
           const photo = selectedPhotos[index];
 
+          // 현재 사진의 회전 및 크기 값 저장
+          currentRotation = photo.rotation;
+          currentScale = photo.scale;
+
           // 사진의 중심점 계산
           const centerX = photo.position.x + 90; // 180/2
           const centerY = photo.position.y + 90; // 180/2
 
-          // 핸들의 위치 계산 (오른쪽 하단)
-          const handleX = photo.position.x + 180;
-          const handleY = photo.position.y + 180;
+          // 핸들의 위치 계산 (오른쪽 하단 코너)
+          // 현재 회전과 크기를 고려하여 핸들 위치 계산
+          const handleOffsetX = 90 * photo.scale; // 180/2 * scale
+          const handleOffsetY = 90 * photo.scale; // 180/2 * scale
+
+          // 회전 각도를 라디안으로 변환
+          const rotationRad = photo.rotation * (Math.PI / 180);
+
+          // 회전을 고려한 핸들 위치 계산
+          const rotatedX =
+            handleOffsetX * Math.cos(rotationRad) -
+            handleOffsetY * Math.sin(rotationRad);
+          const rotatedY =
+            handleOffsetX * Math.sin(rotationRad) +
+            handleOffsetY * Math.cos(rotationRad);
+
+          const handleX = centerX + rotatedX;
+          const handleY = centerY + rotatedY;
 
           // 드래그 시작 정보 저장
           dragStartRef.current = {
@@ -234,10 +254,6 @@ export default function ArchiveScreen() {
             initialRotation: photo.rotation,
             initialScale: photo.scale,
           };
-
-          // 현재 값 저장
-          currentRotation = photo.rotation;
-          currentScale = photo.scale;
 
           setResizeMode("resize-rotate");
         }
@@ -257,22 +273,44 @@ export default function ArchiveScreen() {
           // 각도를 도(degree)로 변환
           const degrees = angle * (180 / Math.PI);
 
+          // 초기 각도에서 상대적인 변화를 계산
+          // 핸들을 처음 잡았을 때의 각도를 기준으로 변화량 계산
+          const initialAngle =
+            Math.atan2(
+              dragStartRef.current.y - dragStartRef.current.centerY,
+              dragStartRef.current.x - dragStartRef.current.centerX
+            ) *
+            (180 / Math.PI);
+
+          // 각도 변화량 계산
+          const angleDelta = degrees - initialAngle;
+
+          // 초기 회전 각도에 변화량을 더함
+          const newRotation = dragStartRef.current.initialRotation + angleDelta;
+
           // 중심점과 드래그 포인트 사이의 거리 계산
           const distance = Math.sqrt(
             Math.pow(vectorX, 2) + Math.pow(vectorY, 2)
           );
 
-          // 크기 조절 (기준 거리에 대한 비율)
-          const baseDistance = 90 * Math.sqrt(2); // 대각선 길이
-          const scale = Math.max(0.5, Math.min(2.0, distance / baseDistance));
+          // 초기 거리 계산 (초기 크기에 기반)
+          const initialDistance =
+            90 * Math.sqrt(2) * dragStartRef.current.initialScale;
+
+          // 크기 조절 (초기 크기에 상대적인 비율로 계산)
+          const scaleFactor = distance / initialDistance;
+          const newScale = Math.max(
+            0.5,
+            Math.min(2.0, dragStartRef.current.initialScale * scaleFactor)
+          );
 
           // 현재 값 업데이트
-          currentRotation = degrees;
-          currentScale = scale;
+          currentRotation = newRotation;
+          currentScale = newScale;
 
           // 애니메이션 값 업데이트 - 실시간으로 UI 반영
-          photoAnimations[index].rotation.setValue(degrees);
-          photoAnimations[index].scale.setValue(scale);
+          photoAnimations[index].rotation.setValue(newRotation);
+          photoAnimations[index].scale.setValue(newScale);
         }
       },
       onPanResponderRelease: () => {
@@ -486,47 +524,14 @@ export default function ArchiveScreen() {
                             </Animated.View>
                           </TouchableOpacity>
 
-                          {/* 크기 조절 및 회전 핸들 */}
-                          {isActive && (
-                            <Animated.View
-                              {...resizeRotatePanResponder.panHandlers}
-                              className="absolute bottom-0 right-0 w-8 h-8 bg-white/80 rounded-full items-center justify-center shadow-md"
-                              style={{
-                                transform: [
-                                  {
-                                    rotate:
-                                      photoAnimations[
-                                        index
-                                      ]?.rotation.interpolate({
-                                        inputRange: [-360, 360],
-                                        outputRange: ["-360deg", "360deg"],
-                                      }) || `${photo.rotation}deg`,
-                                  },
-                                  {
-                                    translateX: Animated.multiply(
-                                      photoAnimations[index]?.scale ||
-                                        photo.scale,
-                                      15
-                                    ),
-                                  },
-                                  {
-                                    translateY: Animated.multiply(
-                                      photoAnimations[index]?.scale ||
-                                        photo.scale,
-                                      15
-                                    ),
-                                  },
-                                ],
-                                zIndex: photo.zIndex + 1,
-                              }}
-                            >
-                              <MaterialIcons
-                                name="open-with"
-                                size={16}
-                                color="#3498db"
-                              />
-                            </Animated.View>
-                          )}
+                          {/* 크기 조절 및 회전 핸들 컴포넌트 */}
+                          <ResizeRotateHandle
+                            isActive={isActive}
+                            photoIndex={index}
+                            photo={photo}
+                            photoAnimations={photoAnimations}
+                            panResponder={resizeRotatePanResponder}
+                          />
                         </View>
                       );
                     })}
