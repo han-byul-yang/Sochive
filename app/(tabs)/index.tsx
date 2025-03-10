@@ -336,6 +336,25 @@ export default function ArchiveScreen() {
     }
   };
 
+  // 사진 삭제 함수 추가
+  const handleDeletePhoto = (index: number) => {
+    // 애니메이션 값 정리
+    if (photoAnimations[index]) {
+      photoAnimations[index].rotation.setValue(0);
+      photoAnimations[index].scale.setValue(1);
+    }
+
+    // 선택된 사진 배열에서 해당 인덱스 제거
+    setSelectedPhotos((prev) => {
+      const newPhotos = [...prev];
+      newPhotos.splice(index, 1);
+      return newPhotos;
+    });
+
+    // 활성 사진 인덱스 초기화
+    setActivePhotoIndex(null);
+  };
+
   return (
     <View className="flex-1 bg-bg">
       {/* Header */}
@@ -531,6 +550,7 @@ export default function ArchiveScreen() {
                             photo={photo}
                             photoAnimations={photoAnimations}
                             panResponder={resizeRotatePanResponder}
+                            onDelete={handleDeletePhoto}
                           />
                         </View>
                       );
