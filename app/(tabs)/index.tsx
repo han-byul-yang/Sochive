@@ -18,6 +18,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { MONTH_EMOJIS, MONTHS } from "@/constants/Months";
 import ResizeRotateHandle from "@/components/ResizeRotateHandle";
 import PhotoActionSheet from "@/components/PhotoActionSheet";
+import CropPhotoModal from "@/components/Modals/CropPhotoModal";
 
 export default function ArchiveScreen() {
   const [mode, setMode] = useState<"read" | "edit">("read");
@@ -41,6 +42,7 @@ export default function ArchiveScreen() {
     "none"
   );
   const [showActionSheet, setShowActionSheet] = useState(false);
+  const [showCropModal, setShowCropModal] = useState(false);
   const actionSheetAnim = useRef(new Animated.Value(0)).current;
 
   // 콜라주 영역 크기 참조
@@ -391,9 +393,20 @@ export default function ArchiveScreen() {
 
   // 사진 자르기 핸들러
   const handleCropPhoto = () => {
-    // 자르기 기능 구현
-    console.log("자르기 기능");
+    setShowCropModal(true);
     toggleActionSheet(false);
+  };
+
+  // 자른 이미지 저장 핸들러
+  const handleSaveCroppedImage = (croppedImageUri: string) => {
+    if (activePhotoIndex !== null) {
+      const updatedPhotos = [...selectedPhotos];
+      updatedPhotos[activePhotoIndex] = {
+        ...updatedPhotos[activePhotoIndex],
+        uri: croppedImageUri,
+      };
+      setSelectedPhotos(updatedPhotos);
+    }
   };
 
   // 사진 필터 적용 핸들러
@@ -645,6 +658,18 @@ export default function ArchiveScreen() {
         onCrop={handleCropPhoto}
         onFilter={handleFilterPhoto}
         onClose={() => toggleActionSheet(false)}
+      />
+
+      {/* CropPhotoModal 추가 */}
+      <CropPhotoModal
+        visible={showCropModal}
+        onClose={() => setShowCropModal(false)}
+        onSave={handleSaveCroppedImage}
+        imageUri={
+          activePhotoIndex !== null
+            ? selectedPhotos[activePhotoIndex]?.uri
+            : null
+        }
       />
     </View>
   );
