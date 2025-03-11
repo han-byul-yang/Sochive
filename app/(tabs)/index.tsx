@@ -3,9 +3,6 @@ import {
   Text,
   TouchableOpacity,
   ScrollView,
-  Dimensions,
-  Modal,
-  FlatList,
   Animated,
   Image,
   ImageBackground,
@@ -21,8 +18,6 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { MONTH_EMOJIS, MONTHS } from "@/constants/Months";
 import ResizeRotateHandle from "@/components/ResizeRotateHandle";
 import PhotoActionSheet from "@/components/PhotoActionSheet";
-
-const { width } = Dimensions.get("window");
 
 export default function ArchiveScreen() {
   const [mode, setMode] = useState<"read" | "edit">("read");
@@ -54,8 +49,6 @@ export default function ArchiveScreen() {
     width: 0,
     height: 0,
   });
-
-  // 현재 선택된 날짜 상태
   const currentDate = new Date();
   const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(
@@ -142,6 +135,15 @@ export default function ArchiveScreen() {
       const centerX = collageAreaSize.width / 2 - 80; // 사진 너비의 절반
       const centerY = collageAreaSize.height / 2 - 80; // 사진 높이의 절반
 
+      // 현재 최대 z-index 찾기
+      const maxZ =
+        selectedPhotos.length > 0
+          ? Math.max(...selectedPhotos.map((p) => p.zIndex))
+          : 0;
+
+      // 새 z-index 기준값 설정 (현재 최대값보다 100 더 높게 설정)
+      const baseZIndex = maxZ + 100;
+
       const newPhotos = result.assets.map((asset, index) => {
         // 중앙에서 약간 랜덤하게 위치 조정
         const randomOffsetX = Math.random() * 60 - 30;
@@ -154,7 +156,7 @@ export default function ArchiveScreen() {
             x: centerX + randomOffsetX,
             y: centerY + randomOffsetY,
           },
-          zIndex: selectedPhotos.length + index + 1,
+          zIndex: baseZIndex + index, // 기존 최대값보다 훨씬 높은 z-index 부여
           rotation: randomRotation,
           scale: 1,
         };

@@ -24,7 +24,7 @@ export const pickMultipleImages = async () => {
                   mediaTypes: ["images"],
                   allowsEditing: false,
                   allowsMultipleSelection: true,
-                  selectionLimit: 5,
+                  selectionLimit: 10,
                   quality: 1,
                   orderedSelection: true,
                 });
@@ -39,7 +39,7 @@ export const pickMultipleImages = async () => {
           mediaTypes: ["images"],
           allowsEditing: false,
           allowsMultipleSelection: true,
-          selectionLimit: 5,
+          selectionLimit: 10,
           quality: 1,
           orderedSelection: true,
         });

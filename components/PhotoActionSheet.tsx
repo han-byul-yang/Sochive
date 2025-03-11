@@ -35,12 +35,12 @@ export default function PhotoActionSheet({
         zIndex: visible ? 20 : -1,
       }}
     >
-      <View className="flex-row items-center justify-between px-4 py-2 border-b border-gray-100">
+      {/* <View className="flex-row items-center justify-between px-4 py-2 border-b border-gray-100">
         <Text className="text-base font-medium text-gray-800">사진 편집</Text>
         <TouchableOpacity onPress={onClose} className="p-1">
           <MaterialIcons name="close" size={20} color="#666" />
         </TouchableOpacity>
-      </View>
+      </View> */}
 
       <View className="flex-row items-center justify-around py-2 px-4">
         <TouchableOpacity
