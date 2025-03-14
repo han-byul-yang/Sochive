@@ -19,6 +19,16 @@ import { MONTH_EMOJIS, MONTHS } from "@/constants/Months";
 import ResizeRotateHandle from "@/components/ResizeRotateHandle";
 import PhotoActionSheet from "@/components/PhotoActionSheet";
 import CropPhotoModal from "@/components/Modals/CropPhotoModal";
+import FilterSelects from "@/components/FilterSelects";
+import { FILTERS } from "@/constants/Filters";
+import {
+  BrightnessFilter,
+  ContrastFilter,
+  GrayScaleFilter,
+  HighTeenFilter,
+  OldFilmFilter,
+  SepiaFilter,
+} from "@/components/Filters";
 
 export default function ArchiveScreen() {
   const [mode, setMode] = useState<"read" | "edit">("read");
@@ -35,6 +45,7 @@ export default function ArchiveScreen() {
       zIndex: number;
       rotation: number;
       scale: number;
+      filter?: string;
     }>
   >([]);
   const [activePhotoIndex, setActivePhotoIndex] = useState<number | null>(null);
@@ -99,6 +110,11 @@ export default function ArchiveScreen() {
       }
     });
   }, [selectedPhotos.length]);
+
+  const handleFilterPhoto = () => {
+    toggleFilterPicker(true);
+    toggleActionSheet(false);
+  };
 
   // 모드 전환 애니메이션
   const toggleMode = () => {
@@ -409,11 +425,47 @@ export default function ArchiveScreen() {
     }
   };
 
-  // 사진 필터 적용 핸들러
-  const handleFilterPhoto = () => {
-    // 필터 적용 기능 구현
-    console.log("필터 적용 기능");
-    toggleActionSheet(false);
+  // 필터 관련 상태 추가
+  const [selectedFilter, setSelectedFilter] = useState<string | null>(null);
+  const [activeFilterCategory, setActiveFilterCategory] =
+    useState<string>("basic");
+  const [showFilterPicker, setShowFilterPicker] = useState(false);
+  const filterPickerAnim = useRef(new Animated.Value(0)).current;
+
+  // 필터 선택기 토글 함수 수정
+  const toggleFilterPicker = (show?: boolean) => {
+    const newValue = show !== undefined ? show : !showFilterPicker;
+    setShowFilterPicker(newValue);
+
+    Animated.timing(filterPickerAnim, {
+      toValue: newValue ? 1 : 0,
+      duration: 300,
+      useNativeDriver: false,
+    }).start();
+
+    // 필터 선택기가 열릴 때 액션 시트 닫기
+    if (newValue) {
+      toggleActionSheet(false);
+    }
+  };
+
+  // 필터 적용 함수 수정
+  const applyFilter = (filterId: string, filterValue: string) => {
+    if (activePhotoIndex === null) return;
+    try {
+      // 선택된 사진에 필터 적용
+      const updatedPhotos = [...selectedPhotos];
+      updatedPhotos[activePhotoIndex] = {
+        ...updatedPhotos[activePhotoIndex],
+        filter: filterId, // 필터 ID 저장
+      };
+      setSelectedPhotos(updatedPhotos);
+      setSelectedFilter(filterValue);
+    } catch (error) {
+      console.error("필터 적용 오류:", error);
+      // 오류 발생 시 기본 상태로 복원
+      toggleFilterPicker(false);
+    }
   };
 
   return (
@@ -606,11 +658,70 @@ export default function ArchiveScreen() {
                                 borderRadius: 8,
                               }}
                             >
-                              <Image
-                                source={{ uri: photo.uri }}
-                                className="w-full h-full"
-                                resizeMode="contain"
-                              />
+                              {photo.filter && photo.filter !== "normal" ? (
+                                <View style={{ width: "100%", height: "100%" }}>
+                                  {(() => {
+                                    try {
+                                      // 필터 ID에 따라 적절한 필터 컴포넌트 반환
+                                      switch (photo.filter) {
+                                        case "grayscale":
+                                          return (
+                                            <GrayScaleFilter photo={photo} />
+                                          );
+                                        case "sepia":
+                                          return <SepiaFilter photo={photo} />;
+                                        case "oldfilm":
+                                          return (
+                                            <OldFilmFilter photo={photo} />
+                                          );
+                                        case "brightness":
+                                          return (
+                                            <BrightnessFilter photo={photo} />
+                                          );
+                                        case "contrast":
+                                          return (
+                                            <ContrastFilter photo={photo} />
+                                          );
+                                        case "highteen":
+                                          return (
+                                            <HighTeenFilter photo={photo} />
+                                          );
+                                        // 다른 필터들도 여기에 추가
+                                        default:
+                                          return (
+                                            <Image
+                                              source={{ uri: photo.uri }}
+                                              style={{
+                                                width: "100%",
+                                                height: "100%",
+                                              }}
+                                              resizeMode="contain"
+                                            />
+                                          );
+                                      }
+                                    } catch (error) {
+                                      console.error("필터 렌더링 오류:", error);
+                                      // 오류 발생 시 기본 이미지 표시
+                                      return (
+                                        <Image
+                                          source={{ uri: photo.uri }}
+                                          style={{
+                                            width: "100%",
+                                            height: "100%",
+                                          }}
+                                          resizeMode="contain"
+                                        />
+                                      );
+                                    }
+                                  })()}
+                                </View>
+                              ) : (
+                                <Image
+                                  source={{ uri: photo.uri }}
+                                  className="w-full h-full"
+                                  resizeMode="contain"
+                                />
+                              )}
                             </Animated.View>
                           </TouchableOpacity>
 
@@ -683,11 +794,20 @@ export default function ArchiveScreen() {
             : null
         }
       />
+
+      {/* Filter Selector Component */}
+      <FilterSelects
+        showFilterPicker={showFilterPicker}
+        filterPickerAnim={filterPickerAnim}
+        activeCategory={activeFilterCategory}
+        selectedFilter={selectedFilter}
+        setActiveCategory={setActiveFilterCategory}
+        toggleFilterPicker={toggleFilterPicker}
+        onApplyFilter={applyFilter}
+      />
     </View>
   );
 }
 
-// 버튼 zindex 가장ㅇ 크게
 // 사진 테두리 조절
 // crop 한 사진 원본 저장
-// 선은 한번만 그릴 수 있도록
