@@ -498,7 +498,7 @@ export default function ArchiveScreen() {
             <ScrollView className="flex-1 p-4">
               {/* Edit Mode Controls with Animation */}
               <Animated.View
-                className="flex-row justify-end space-x-2 mb-4"
+                className="relative mb-4 z-[10000]"
                 style={{
                   opacity: fadeAnim,
                   transform: [
@@ -509,13 +509,17 @@ export default function ArchiveScreen() {
                       }),
                     },
                   ],
+                  height: 40, // 버튼 컨테이너 높이 설정
                 }}
               >
                 {/* Background Button */}
                 <TouchableOpacity
-                  className="bg-gray-100 p-[8px] rounded-full"
+                  className="absolute right-12 bg-gray-100 p-[8px] rounded-full"
                   activeOpacity={0.9}
                   onPress={toggleBackgroundPicker}
+                  style={{
+                    elevation: 5, // Android에서 z-index 효과를 위해 추가
+                  }}
                 >
                   <IconSymbol
                     name="photo.on.rectangle"
@@ -526,9 +530,12 @@ export default function ArchiveScreen() {
 
                 {/* Camera Button */}
                 <TouchableOpacity
-                  className="bg-key p-[8px] rounded-full"
+                  className="absolute right-0 bg-key p-[8px] rounded-full"
                   activeOpacity={0.9}
                   onPress={handlePickImages}
+                  style={{
+                    elevation: 5, // Android에서 z-index 효과를 위해 추가
+                  }}
                 >
                   <IconSymbol name="camera" size={24} color="#fff" />
                 </TouchableOpacity>
@@ -540,7 +547,11 @@ export default function ArchiveScreen() {
                 className={`bg-white/90 rounded-2xl shadow-sm ${
                   selectedPhotos.length > 0 ? "bg-transparent" : "bg-white/80"
                 }`}
-                style={{ height: 200 }} // 고정 높이 설정
+                style={{
+                  height: 200,
+                  zIndex: 1000,
+                  elevation: 5, // Android에서 z-index 효과를 위해 추가
+                }}
                 onLayout={(event) => {
                   const { width, height } = event.nativeEvent.layout;
                   setCollageAreaSize({ width, height });
@@ -592,6 +603,7 @@ export default function ArchiveScreen() {
                                 ],
                                 borderWidth: isActive ? 2 : 0,
                                 borderColor: "#3498db",
+                                borderRadius: 8,
                               }}
                             >
                               <Image
@@ -674,3 +686,8 @@ export default function ArchiveScreen() {
     </View>
   );
 }
+
+// 버튼 zindex 가장ㅇ 크게
+// 사진 테두리 조절
+// crop 한 사진 원본 저장
+// 선은 한번만 그릴 수 있도록
