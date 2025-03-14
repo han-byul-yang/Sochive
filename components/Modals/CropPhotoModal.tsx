@@ -79,21 +79,22 @@ export default function CropPhotoModal({
   };
 
   const panResponder = PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onMoveShouldSetPanResponder: () => true,
+    onStartShouldSetPanResponder: () => paths.length === 0,
+    onMoveShouldSetPanResponder: () => paths.length === 0,
     onPanResponderGrant: (evt) => {
+      if (paths.length > 0) return;
+
       const { locationX, locationY } = evt.nativeEvent;
       setIsDrawing(true);
       setCurrentPath(`M ${locationX} ${locationY}`);
     },
     onPanResponderMove: (evt) => {
-      if (!isDrawing) return;
+      if (!isDrawing || paths.length > 0) return;
       const { locationX, locationY } = evt.nativeEvent;
       setCurrentPath((prev) => `${prev} L ${locationX} ${locationY}`);
     },
     onPanResponderRelease: () => {
-      if (currentPath) {
-        // 경로를 닫아서 다각형 형태로 만듦
+      if (currentPath && paths.length === 0) {
         setCurrentPath((prev) => `${prev} Z`);
         setPaths((prev) => [...prev, currentPath + " Z"]);
         setCurrentPath("");
@@ -154,10 +155,18 @@ export default function CropPhotoModal({
           <TouchableOpacity onPress={onClose}>
             <MaterialIcons name="close" size={24} color="#fff" />
           </TouchableOpacity>
-          <Text className="text-white text-lg font-medium">선 그리기</Text>
+          <Text className="text-white text-lg font-medium">사진 오리기</Text>
           <TouchableOpacity onPress={cropImage}>
             <Text className="text-blue-400 font-medium">완료</Text>
           </TouchableOpacity>
+        </View>
+
+        <View className="px-4 py-2">
+          <Text className="text-white text-sm text-center">
+            {paths.length === 0
+              ? "영역을 선택하려면 화면에 선을 그려주세요 (한 번만 가능)"
+              : "선택된 영역이 자르기에 사용됩니다"}
+          </Text>
         </View>
 
         <View className="flex-1 items-center justify-center">
@@ -234,7 +243,12 @@ export default function CropPhotoModal({
         </View>
 
         <View className="flex-row items-center justify-around p-4 bg-black">
-          <TouchableOpacity onPress={clearPaths} className="items-center">
+          <TouchableOpacity
+            onPress={clearPaths}
+            className="items-center"
+            disabled={paths.length === 0}
+            style={{ opacity: paths.length === 0 ? 0.5 : 1 }}
+          >
             <View className="w-10 h-10 bg-gray-800 rounded-full items-center justify-center mb-1">
               <MaterialIcons name="refresh" size={20} color="#fff" />
             </View>
