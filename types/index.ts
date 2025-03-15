@@ -1,0 +1,31 @@
+import { FieldValue, Timestamp } from "firebase/firestore";
+
+export type Photo = {
+  uri: string;
+  position: {
+    x: number;
+    y: number;
+  };
+  zIndex: number;
+  rotation: number;
+  scale: number;
+  filter?: string;
+  memo?: string;
+};
+
+export type PhotoData = {
+  photos: Photo[];
+  month: number;
+  year: number;
+  background: string | null;
+  createdAt: FieldValue;
+};
+
+export type PhotoDocData = {
+  id: string;
+  photos: Photo[];
+  month: number;
+  year: number;
+  background: string | null;
+  createdAt: Timestamp;
+};

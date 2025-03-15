@@ -7,6 +7,7 @@ import {
   Image,
   ImageBackground,
   PanResponder,
+  Alert,
 } from "react-native";
 import { useState, useMemo, useRef, useEffect } from "react";
 import { IconSymbol } from "@/components/ui/IconSymbol";
@@ -29,6 +30,15 @@ import {
   OldFilmFilter,
   SepiaFilter,
 } from "@/components/Filters";
+import useAuth from "@/contexts/AuthContext";
+import { createPhotoStore } from "@/lib/firestore";
+import { serverTimestamp } from "firebase/firestore";
+import { Photo } from "@/types";
+import {
+  useGetPhotos,
+  useCreatePhoto,
+  useUpdatePhoto,
+} from "@/hooks/useGetPhotos";
 
 export default function ArchiveScreen() {
   const [mode, setMode] = useState<"read" | "edit">("read");
@@ -38,16 +48,7 @@ export default function ArchiveScreen() {
     null
   );
   const [activeCategory, setActiveCategory] = useState<string>("hot");
-  const [selectedPhotos, setSelectedPhotos] = useState<
-    Array<{
-      uri: string;
-      position: { x: number; y: number };
-      zIndex: number;
-      rotation: number;
-      scale: number;
-      filter?: string;
-    }>
-  >([]);
+  const [selectedPhotos, setSelectedPhotos] = useState<Photo[]>([]);
   const [activePhotoIndex, setActivePhotoIndex] = useState<number | null>(null);
   const [resizeMode, setResizeMode] = useState<"none" | "resize-rotate">(
     "none"
@@ -67,14 +68,26 @@ export default function ArchiveScreen() {
   const [selectedMonth, setSelectedMonth] = useState(
     currentDate.getMonth() + 1
   );
-
-  // 월 목록 생성
-  const months = useMemo(() => {
-    return Array.from({ length: 12 }, (_, i) => i + 1);
-  }, []);
-
+  const {
+    data: photos,
+    isLoading,
+    error,
+  } = useGetPhotos(selectedMonth, selectedYear);
+  const { mutate: createPhotoMutate } = useCreatePhoto(
+    selectedMonth,
+    selectedYear
+  );
+  const { mutate: updatePhotoMutate } = useUpdatePhoto(
+    selectedMonth,
+    selectedYear
+  );
   // 월 이름 가져오기 함수 추가
   const getMonthName = (month: number) => MONTHS[month - 1];
+
+  useEffect(() => {
+    setSelectedPhotos(photos?.[0]?.photos || []);
+    setSelectedBackground(photos?.[0]?.background || null);
+  }, [photos, selectedMonth, selectedYear]);
 
   // 애니메이션 값 추가
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -468,6 +481,55 @@ export default function ArchiveScreen() {
     }
   };
 
+  const { user } = useAuth();
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleSavePhotos = async () => {
+    if (!user || selectedPhotos.length === 0) return;
+
+    try {
+      setIsSaving(true);
+
+      // 현재 선택된 월과 년도 정보
+      const currentMonth = selectedMonth;
+      const currentYear = selectedYear;
+
+      // 저장할 데이터 구성
+      const photoData = {
+        photos: selectedPhotos,
+        month: currentMonth, // 1~12 숫자로 저장
+        year: currentYear,
+        background: selectedBackground,
+        createdAt: serverTimestamp(),
+      };
+      // Firestore에 저장
+      createPhotoMutate(photoData);
+      // 저장 성공 메시지 또는 액션
+      Alert.alert("저장 완료", "콜라주가 성공적으로 저장되었습니다.");
+    } catch (error) {
+      console.error("콜라주 저장 오류:", error);
+      Alert.alert("저장 실패", "콜라주 저장 중 오류가 발생했습니다.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleEditPhotos = () => {
+    try {
+      setIsSaving(true);
+      updatePhotoMutate({
+        photoData: selectedPhotos,
+        photoId: photos?.[0]?.id || "",
+      });
+      Alert.alert("수정 완료", "콜라주가 성공적으로 수정되었습니다.");
+    } catch (error) {
+      console.error(error);
+      Alert.alert("수정 실패", "콜라주 수정 중 오류가 발생했습니다.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <View className="flex-1 bg-bg">
       {/* Header */}
@@ -504,10 +566,17 @@ export default function ArchiveScreen() {
           {/* Save Button (Edit Mode Only) */}
           {mode === "edit" && (
             <TouchableOpacity
-              className="bg-key px-4 py-2 rounded-full"
+              onPress={photos ? handleSavePhotos : handleEditPhotos}
+              className="bg-blue-500 px-4 py-2 rounded-lg"
               activeOpacity={0.9}
+              disabled={isSaving || selectedPhotos.length === 0}
+              style={{
+                opacity: isSaving || selectedPhotos.length === 0 ? 0.5 : 1,
+              }}
             >
-              <Text className="text-white font-medium">저장</Text>
+              <Text className="text-white font-medium">
+                {isSaving ? "저장 중..." : "저장"}
+              </Text>
             </TouchableOpacity>
           )}
 

@@ -1,4 +1,5 @@
 import { db } from "@/lib/firebase";
+import { Photo, PhotoData } from "@/types";
 import {
   doc,
   getDoc,
@@ -33,4 +34,39 @@ export const createUserStore = async (userId: string, email: string) => {
     console.error("Error creating user:", error);
     return { success: false, error };
   }
+};
+
+export const createPhotoStore = async (
+  userId: string,
+  photoData: PhotoData
+) => {
+  const photoRef = collection(db, "Users", userId, "Photos");
+  await addDoc(photoRef, photoData);
+};
+
+export const getPhotos = async (
+  userId: string,
+  month: number,
+  year: number
+) => {
+  const photoRef = collection(db, "Users", userId, "Photos");
+  const q = query(
+    photoRef,
+    where("month", "==", month),
+    where("year", "==", year)
+  );
+  const querySnapshot = await getDocs(q);
+  return querySnapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
+};
+
+export const updatePhotoStore = async (
+  userId: string,
+  photoData: Photo[],
+  photoId: string
+) => {
+  const photoRef = doc(db, "Users", userId, "Photos", photoId);
+  await updateDoc(photoRef, { photos: photoData });
 };

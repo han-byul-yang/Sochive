@@ -36,6 +36,9 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { auth } from "@/lib/firebase";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+const queryClient = new QueryClient();
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -147,19 +150,21 @@ export default function RootLayout() {
   // }, []);
 
   return (
-    <AuthProvider>
-      <RecoilRoot>
-        <ThemeProvider
-          value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
-        >
-          <GestureHandlerRootView style={{ flex: 1 }}>
-            <SafeAreaView className="flex-1 bg-[#fcfcfc]">
-              <RootLayoutNav />
-              <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
-            </SafeAreaView>
-          </GestureHandlerRootView>
-        </ThemeProvider>
-      </RecoilRoot>
-    </AuthProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <RecoilRoot>
+          <ThemeProvider
+            value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
+          >
+            <GestureHandlerRootView style={{ flex: 1 }}>
+              <SafeAreaView className="flex-1 bg-[#fcfcfc]">
+                <RootLayoutNav />
+                <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
+              </SafeAreaView>
+            </GestureHandlerRootView>
+          </ThemeProvider>
+        </RecoilRoot>
+      </AuthProvider>
+    </QueryClientProvider>
   );
 }
