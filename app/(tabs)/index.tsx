@@ -8,6 +8,8 @@ import {
   ImageBackground,
   PanResponder,
   Alert,
+  Modal,
+  TextInput,
 } from "react-native";
 import { useState, useMemo, useRef, useEffect } from "react";
 import { IconSymbol } from "@/components/ui/IconSymbol";
@@ -39,6 +41,8 @@ import {
   useCreatePhoto,
   useUpdatePhoto,
 } from "@/hooks/useGetPhotos";
+import PhotoModal from "@/components/Modals/PhotoModal";
+import MemoEditModal from "@/components/Modals/MemoEditModal";
 
 export default function ArchiveScreen() {
   const [mode, setMode] = useState<"read" | "edit">("read");
@@ -409,14 +413,24 @@ export default function ArchiveScreen() {
   // 사진 클릭 핸들러 수정
   const handlePhotoPress = (index: number) => {
     if (mode === "edit") {
+      // 편집 모드일 때만 기존 동작 유지
       setActivePhotoIndex(index);
-      setSelectedPhotos((prev) => {
-        const newPhotos = [...prev];
-        const maxZ = Math.max(...newPhotos.map((p) => p.zIndex));
+
+      // 최대 z-index 찾기
+      const maxZ = Math.max(...selectedPhotos.map((p) => p.zIndex));
+
+      // 선택된 사진의 z-index를 최대값 + 1로 설정
+      setSelectedPhotos((prevPhotos) => {
+        const newPhotos = [...prevPhotos];
         newPhotos[index].zIndex = maxZ + 1;
         return newPhotos;
       });
+
       toggleActionSheet(true);
+    } else {
+      // 읽기 모드일 때는 사진 모달만 표시
+      setActivePhotoIndex(index);
+      setShowPhotoModal(true);
     }
   };
 
@@ -518,7 +532,10 @@ export default function ArchiveScreen() {
     try {
       setIsSaving(true);
       updatePhotoMutate({
-        photoData: selectedPhotos,
+        photoData: {
+          photos: selectedPhotos,
+          background: selectedBackground,
+        },
         photoId: photos?.[0]?.id || "",
       });
       Alert.alert("수정 완료", "콜라주가 성공적으로 수정되었습니다.");
@@ -527,6 +544,50 @@ export default function ArchiveScreen() {
       Alert.alert("수정 실패", "콜라주 수정 중 오류가 발생했습니다.");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  // 상태 변수 추가 (약 60-65줄)
+  const [showPhotoModal, setShowPhotoModal] = useState(false);
+  const [showMemoModal, setShowMemoModal] = useState(false);
+  const [memoText, setMemoText] = useState("");
+  const [editingMemoIndex, setEditingMemoIndex] = useState<number | null>(null);
+
+  // 사진 모달 닫기 핸들러
+  const handleClosePhotoModal = () => {
+    setShowPhotoModal(false);
+    setActivePhotoIndex(null);
+  };
+
+  // 메모 관련 상태 추가
+  const handleEditMemo = (index: number) => {
+    setEditingMemoIndex(index);
+    setMemoText(selectedPhotos[index]?.memo || "");
+    setShowMemoModal(true);
+  };
+
+  const handleSaveMemo = () => {
+    if (editingMemoIndex !== null) {
+      const updatedPhotos = [...selectedPhotos];
+      updatedPhotos[editingMemoIndex] = {
+        ...updatedPhotos[editingMemoIndex],
+        memo: memoText,
+      };
+      setSelectedPhotos(updatedPhotos);
+      try {
+        updatePhotoMutate({
+          photoData: {
+            photos: updatedPhotos,
+          },
+          photoId: photos?.[0]?.id || "",
+        });
+        Alert.alert("수정 완료", "메모가 성공적으로 수정되었습니다.");
+      } catch (error) {
+        console.error(error);
+        Alert.alert("수정 실패", "메모 수정 중 오류가 발생했습니다.");
+      } finally {
+        setShowMemoModal(false);
+      }
     }
   };
 
@@ -566,7 +627,7 @@ export default function ArchiveScreen() {
           {/* Save Button (Edit Mode Only) */}
           {mode === "edit" && (
             <TouchableOpacity
-              onPress={photos ? handleSavePhotos : handleEditPhotos}
+              onPress={photos ? handleEditPhotos : handleSavePhotos}
               className="bg-blue-500 px-4 py-2 rounded-lg"
               activeOpacity={0.9}
               disabled={isSaving || selectedPhotos.length === 0}
@@ -703,7 +764,9 @@ export default function ArchiveScreen() {
                             onPress={() => handlePhotoPress(index)}
                           >
                             <Animated.View
-                              {...panResponder.panHandlers}
+                              {...(mode === "edit"
+                                ? panResponder.panHandlers
+                                : {})}
                               className="w-full h-full rounded-lg overflow-hidden shadow-md"
                               style={{
                                 transform: [
@@ -722,7 +785,8 @@ export default function ArchiveScreen() {
                                       photo.scale,
                                   },
                                 ],
-                                borderWidth: isActive ? 2 : 0,
+                                borderWidth:
+                                  isActive && mode === "edit" ? 2 : 0,
                                 borderColor: "#3498db",
                                 borderRadius: 8,
                               }}
@@ -794,15 +858,17 @@ export default function ArchiveScreen() {
                             </Animated.View>
                           </TouchableOpacity>
 
-                          {/* 크기 조절 및 회전 핸들 컴포넌트 */}
-                          <ResizeRotateHandle
-                            isActive={isActive}
-                            photoIndex={index}
-                            photo={photo}
-                            photoAnimations={photoAnimations}
-                            panResponder={resizeRotatePanResponder}
-                            onDelete={handleDeletePhoto}
-                          />
+                          {/* 크기 조절 및 회전 핸들 컴포넌트 - 편집 모드일 때만 표시 */}
+                          {mode === "edit" && (
+                            <ResizeRotateHandle
+                              isActive={isActive}
+                              photoIndex={index}
+                              photo={photo}
+                              photoAnimations={photoAnimations}
+                              panResponder={resizeRotatePanResponder}
+                              onDelete={handleDeletePhoto}
+                            />
+                          )}
                         </View>
                       );
                     })}
@@ -873,6 +939,22 @@ export default function ArchiveScreen() {
         setActiveCategory={setActiveFilterCategory}
         toggleFilterPicker={toggleFilterPicker}
         onApplyFilter={applyFilter}
+      />
+
+      <PhotoModal
+        showPhotoModal={showPhotoModal}
+        handleClosePhotoModal={handleClosePhotoModal}
+        activePhotoIndex={activePhotoIndex}
+        selectedPhotos={selectedPhotos}
+        handleEditMemo={handleEditMemo}
+      />
+      {/* 메모 편집 모달 */}
+      <MemoEditModal
+        showMemoModal={showMemoModal}
+        setShowMemoModal={setShowMemoModal}
+        memoText={memoText}
+        setMemoText={setMemoText}
+        handleSaveMemo={handleSaveMemo}
       />
     </View>
   );

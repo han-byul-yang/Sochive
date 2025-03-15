@@ -30,7 +30,6 @@ export default function FilterSelects({
   onApplyFilter,
 }: FilterSelectsProps) {
   // 디버깅용 로그 추가
-  console.log("FilterSelects 렌더링: ", showFilterPicker);
 
   return (
     <Animated.View

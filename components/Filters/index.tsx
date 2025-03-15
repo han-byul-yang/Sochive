@@ -11,6 +11,7 @@ interface GrayScaleFilterProps {
     rotation: number;
     scale: number;
     filter?: string;
+    memo?: string;
   };
 }
 

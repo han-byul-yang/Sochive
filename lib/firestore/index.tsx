@@ -64,9 +64,9 @@ export const getPhotos = async (
 
 export const updatePhotoStore = async (
   userId: string,
-  photoData: Photo[],
+  photoData: Partial<PhotoData>,
   photoId: string
 ) => {
   const photoRef = doc(db, "Users", userId, "Photos", photoId);
-  await updateDoc(photoRef, { photos: photoData });
+  await updateDoc(photoRef, photoData);
 };

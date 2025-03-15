@@ -46,7 +46,7 @@ export const useUpdatePhoto = (month: number, year: number) => {
       photoData,
       photoId,
     }: {
-      photoData: Photo[];
+      photoData: Partial<PhotoData>;
       photoId: string;
     }) => {
       if (!user?.uid) throw new Error("User not found");
