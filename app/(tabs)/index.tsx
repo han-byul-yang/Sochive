@@ -627,7 +627,11 @@ export default function ArchiveScreen() {
           {/* Save Button (Edit Mode Only) */}
           {mode === "edit" && (
             <TouchableOpacity
-              onPress={photos ? handleEditPhotos : handleSavePhotos}
+              onPress={
+                photos && photos.length > 0
+                  ? handleEditPhotos
+                  : handleSavePhotos
+              }
               className="bg-blue-500 px-4 py-2 rounded-lg"
               activeOpacity={0.9}
               disabled={isSaving || selectedPhotos.length === 0}
