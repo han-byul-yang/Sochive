@@ -44,7 +44,6 @@ export default function CropPhotoModal({
   const screenWidth = Dimensions.get("window").width;
   const screenHeight = Dimensions.get("window").height * 0.7;
   const canvasRef = useCanvasRef();
-
   // Skia 이미지 로드
   const skiaImage = useImage(imageUri || "");
 
@@ -118,16 +117,49 @@ export default function CropPhotoModal({
         return;
       }
 
-      // Canvas 스냅샷 생성
-      const snapshot = canvasRef.current?.makeImageSnapshot();
+      // 경로의 경계 상자(bounding box) 계산
+      const bounds = skPath.getBounds();
 
-      if (!snapshot) {
-        Alert.alert("오류", "이미지를 캡처할 수 없습니다.");
+      // 경계 상자 크기의 새 Surface 생성
+      const width = Math.ceil(bounds.width);
+      const height = Math.ceil(bounds.height);
+      const surface = Skia.Surface.Make(width, height);
+
+      if (!surface) {
+        Alert.alert("오류", "이미지 처리를 위한 표면을 생성할 수 없습니다.");
         return;
       }
 
+      const canvas = surface.getCanvas();
+
+      // 캔버스 원점을 경계 상자의 좌상단으로 이동
+      canvas.translate(-bounds.x, -bounds.y);
+
+      // 경로로 클리핑 (대체 방법)
+      canvas.clipPath(skPath, 1, true); // 1은 Intersect 연산을 의미
+
+      // 이미지 그리기 대체 방법
+      const src = {
+        x: 0,
+        y: 0,
+        width: skiaImage.width(),
+        height: skiaImage.height(),
+      };
+      const dest = {
+        x: 0,
+        y: 0,
+        width: imageSize.width,
+        height: imageSize.height,
+      };
+      const paint = Skia.Paint();
+      paint.setAntiAlias(true);
+      canvas.drawImageRect(skiaImage, src, dest, paint);
+
+      // 이미지 추출
+      const image = surface.makeImageSnapshot();
+
       // 스냅샷을 PNG로 인코딩
-      const data = snapshot.encodeToBase64(ImageFormat.PNG, 100);
+      const data = image.encodeToBase64(ImageFormat.PNG, 100);
 
       // 임시 파일 경로 생성
       const filePath = `${
@@ -139,7 +171,11 @@ export default function CropPhotoModal({
         encoding: FileSystem.EncodingType.Base64,
       });
 
-      // 저장된 이미지 URI를 콜백으로 전달
+      // 크롭된 이미지의 실제 크기 로깅
+      Image.getSize(filePath, (width, height) => {
+        console.log("Cropped image size:", width, height);
+      });
+
       onSave(filePath);
       onClose();
     } catch (error) {
@@ -226,12 +262,10 @@ export default function CropPhotoModal({
             style={{ width: imageSize.width, height: imageSize.height }}
           >
             {skiaImage && paths.length > 0 && (
-              <Group
-                clip={Skia.Path.MakeFromSVGString(paths[0]) || Skia.Path.Make()}
-              >
+              <Group clip={Skia.Path.MakeFromSVGString(paths[0]) || undefined}>
                 <SkiaImage
                   image={skiaImage}
-                  fit="contain"
+                  fit="cover"
                   x={0}
                   y={0}
                   width={imageSize.width}

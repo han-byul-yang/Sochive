@@ -440,15 +440,21 @@ export default function ArchiveScreen() {
     toggleActionSheet(false);
   };
 
-  // 자른 이미지 저장 핸들러
+  // 자른 이미지 저장 핸들러 수정
   const handleSaveCroppedImage = (croppedImageUri: string) => {
     if (activePhotoIndex !== null) {
-      const updatedPhotos = [...selectedPhotos];
-      updatedPhotos[activePhotoIndex] = {
-        ...updatedPhotos[activePhotoIndex],
-        uri: croppedImageUri,
-      };
-      setSelectedPhotos(updatedPhotos);
+      // 크롭된 이미지의 크기 가져오기
+      Image.getSize(croppedImageUri, (width, height) => {
+        const updatedPhotos = [...selectedPhotos];
+        updatedPhotos[activePhotoIndex] = {
+          ...updatedPhotos[activePhotoIndex],
+          uri: croppedImageUri,
+          // 크롭된 이미지의 실제 크기 저장
+          width: width,
+          height: height,
+        };
+        setSelectedPhotos(updatedPhotos);
+      });
     }
   };
 
@@ -756,8 +762,8 @@ export default function ArchiveScreen() {
                           key={index}
                           className="absolute"
                           style={{
-                            width: 180,
-                            height: 180,
+                            width: 160,
+                            height: 160,
                             left: photo.position.x,
                             top: photo.position.y,
                             zIndex: photo.zIndex,
@@ -855,7 +861,7 @@ export default function ArchiveScreen() {
                               ) : (
                                 <Image
                                   source={{ uri: photo.uri }}
-                                  className="w-full h-full"
+                                  style={{ width: "100%", height: "100%" }}
                                   resizeMode="contain"
                                 />
                               )}

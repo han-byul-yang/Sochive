@@ -11,6 +11,8 @@ export type Photo = {
   scale: number;
   filter?: string;
   memo?: string;
+  width?: number;
+  height?: number;
 };
 
 export type PhotoData = {

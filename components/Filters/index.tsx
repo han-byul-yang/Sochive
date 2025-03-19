@@ -29,7 +29,7 @@ export function GrayScaleFilter({ photo }: GrayScaleFilterProps) {
           width: "100%",
           height: "100%",
         }}
-        resizeMode="contain"
+        resizeMode="cover"
       />
       <View
         style={{
@@ -59,7 +59,7 @@ export function SepiaFilter({ photo }: GrayScaleFilterProps) {
           width: "100%",
           height: "100%",
         }}
-        resizeMode="contain"
+        resizeMode="cover"
       />
       <View
         style={{
@@ -89,7 +89,7 @@ export function OldFilmFilter({ photo }: GrayScaleFilterProps) {
           width: "100%",
           height: "100%",
         }}
-        resizeMode="contain"
+        resizeMode="cover"
       />
       <View
         style={{
@@ -129,7 +129,7 @@ export function BrightnessFilter({ photo }: GrayScaleFilterProps) {
           width: "100%",
           height: "100%",
         }}
-        resizeMode="contain"
+        resizeMode="cover"
       />
       <View
         style={{
@@ -159,7 +159,7 @@ export function ContrastFilter({ photo }: GrayScaleFilterProps) {
           width: "100%",
           height: "100%",
         }}
-        resizeMode="contain"
+        resizeMode="cover"
       />
       <View
         style={{
@@ -189,7 +189,7 @@ export function HighTeenFilter({ photo }: GrayScaleFilterProps) {
           width: "100%",
           height: "100%",
         }}
-        resizeMode="contain"
+        resizeMode="cover"
       />
       {/* 밝은 핑크색 오버레이 */}
       <View
