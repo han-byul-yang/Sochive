@@ -68,6 +68,7 @@ export default function ArchiveScreen() {
     height: 0,
   });
   const currentDate = new Date();
+  const [originalUri, setOriginalUri] = useState(false);
   const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(
     currentDate.getMonth() + 1
@@ -492,6 +493,7 @@ export default function ArchiveScreen() {
           height: height,
         };
         setSelectedPhotos(updatedPhotos);
+        setOriginalUri(false);
       });
     }
   };
@@ -633,6 +635,10 @@ export default function ArchiveScreen() {
         setShowMemoModal(false);
       }
     }
+  };
+
+  const handleOriginalChange = () => {
+    setOriginalUri(true);
   };
 
   return (
@@ -999,9 +1005,12 @@ export default function ArchiveScreen() {
           onSave={handleSaveCroppedImage}
           imageUri={
             activePhotoIndex !== null
-              ? selectedPhotos[activePhotoIndex]?.uri
+              ? originalUri
+                ? selectedPhotos[activePhotoIndex]?.originalUri
+                : selectedPhotos[activePhotoIndex]?.uri
               : null
           }
+          onOriginalChange={handleOriginalChange}
         />
 
         {/* Filter Selector Component */}

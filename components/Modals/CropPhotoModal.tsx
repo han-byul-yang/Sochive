@@ -29,6 +29,7 @@ interface CropPhotoModalProps {
   onClose: () => void;
   onSave: (croppedImageUri: string) => void;
   imageUri: string | null;
+  onOriginalChange: () => void;
 }
 
 export default function CropPhotoModal({
@@ -36,6 +37,7 @@ export default function CropPhotoModal({
   onClose,
   onSave,
   imageUri,
+  onOriginalChange,
 }: CropPhotoModalProps) {
   const [paths, setPaths] = useState<string[]>([]);
   const [currentPath, setCurrentPath] = useState<string>("");
@@ -46,6 +48,10 @@ export default function CropPhotoModal({
   const canvasRef = useCanvasRef();
   // Skia 이미지 로드
   const skiaImage = useImage(imageUri || "");
+
+  const handleOriginalChange = () => {
+    onOriginalChange();
+  };
 
   const calculateImageSize = () => {
     if (!imageUri) return;
@@ -196,11 +202,6 @@ export default function CropPhotoModal({
         encoding: FileSystem.EncodingType.Base64,
       });
 
-      // 크롭된 이미지의 실제 크기 로깅
-      Image.getSize(filePath, (width, height) => {
-        console.log("Cropped image size:", width, height);
-      });
-
       onSave(filePath);
       onClose();
     } catch (error) {
@@ -312,6 +313,15 @@ export default function CropPhotoModal({
               <MaterialIcons name="refresh" size={20} color="#fff" />
             </View>
             <Text className="text-white text-xs">초기화</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={handleOriginalChange}
+            className="items-center"
+          >
+            <View className="w-10 h-10 bg-amber-600 rounded-full items-center justify-center mb-1">
+              <MaterialIcons name="restore" size={20} color="#fff" />
+            </View>
+            <Text className="text-white text-xs">원본</Text>
           </TouchableOpacity>
         </View>
       </View>
