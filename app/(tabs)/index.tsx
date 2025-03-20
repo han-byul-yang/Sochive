@@ -10,6 +10,7 @@ import {
   Alert,
   Modal,
   TextInput,
+  ActivityIndicator,
 } from "react-native";
 import { useState, useMemo, useRef, useEffect } from "react";
 import { IconSymbol } from "@/components/ui/IconSymbol";
@@ -74,7 +75,7 @@ export default function ArchiveScreen() {
   );
   const {
     data: photos,
-    isLoading,
+    isLoading: isPhotosLoading,
     error,
   } = useGetPhotos(selectedMonth, selectedYear);
   const { mutate: createPhotoMutate } = useCreatePhoto(
@@ -598,374 +599,400 @@ export default function ArchiveScreen() {
   };
 
   return (
-    <View className="flex-1 bg-bg">
-      {/* Header */}
-      <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-100">
-        <TouchableOpacity
-          onPress={() => setShowDatePicker(true)}
-          activeOpacity={0.9}
-          className="flex-row items-center"
+    <View className="flex-1 bg-white">
+      {/* 로딩 인디케이터 */}
+      {isPhotosLoading && (
+        <View
+          className="absolute inset-0 h-full w-full bg-black/30 items-center justify-center z-50"
+          style={{ elevation: 5 }}
         >
-          <View className="flex-row items-baseline">
-            <ThemedText className="text-3xl font-gaegu text-key">
-              {getMonthName(selectedMonth)}
-            </ThemedText>
-            <Text className="text-xl">
-              {MONTH_EMOJIS[getMonthName(selectedMonth)]}
+          <View className="bg-white p-5 rounded-xl items-center">
+            <ActivityIndicator size="large" color="#3498db" />
+            <Text className="mt-3 text-gray-700 font-medium">
+              사진을 불러오는 중...
             </Text>
-            <ThemedText className="text-xl font-gaegu text-gray-400 ml-2">
-              {selectedYear}
-            </ThemedText>
-            <IconSymbol
-              name="chevron.right"
-              size={18}
-              color="#3D3D3D"
-              style={{
-                transform: [{ rotate: "90deg" }],
-                marginLeft: 4,
-              }}
-            />
           </View>
-        </TouchableOpacity>
-
-        {/* Header Right Buttons */}
-        <View className="flex-row items-center space-x-2">
-          {/* Save Button (Edit Mode Only) */}
-          {mode === "edit" && (
-            <TouchableOpacity
-              onPress={
-                photos && photos.length > 0
-                  ? handleEditPhotos
-                  : handleSavePhotos
-              }
-              className="bg-blue-500 px-4 py-2 rounded-lg"
-              activeOpacity={0.9}
-              disabled={isSaving || selectedPhotos.length === 0}
-              style={{
-                opacity: isSaving || selectedPhotos.length === 0 ? 0.5 : 1,
-              }}
-            >
-              <Text className="text-white font-medium">
-                {isSaving ? "저장 중..." : "저장"}
-              </Text>
-            </TouchableOpacity>
-          )}
-
-          {/* Mode Toggle Button */}
-          <TouchableOpacity
-            onPress={toggleMode}
-            activeOpacity={0.9}
-            className={`p-[8px] rounded-full ${
-              mode === "edit" ? "bg-key" : "bg-gray-100"
-            }`}
-          >
-            <IconSymbol
-              name={mode === "edit" ? "xmark" : "pencil"}
-              size={22}
-              color={mode === "edit" ? "#fff" : "#3D3D3D"}
-            />
-          </TouchableOpacity>
         </View>
-      </View>
+      )}
 
-      {/* Main Content with Background */}
-      <View
-        ref={mainContentRef}
-        className="flex-1 overflow-hidden"
-        onLayout={(event) => {
-          const { width, height, x, y } = event.nativeEvent.layout;
-          setMainContentSize({ width, height, x, y });
-        }}
-      >
-        <ImageBackground
-          source={selectedBackground ? { uri: selectedBackground } : undefined}
-          style={{ flex: 1 }}
-          imageStyle={{ opacity: 0.65 }}
-        >
+      <View className="flex-1 relative">
+        {/* Header */}
+        <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-100">
           <TouchableOpacity
-            activeOpacity={1}
-            onPress={handleBackgroundTap}
-            style={{ flex: 1 }}
+            onPress={() => setShowDatePicker(true)}
+            activeOpacity={0.9}
+            className="flex-row items-center"
           >
-            <ScrollView className="flex-1 p-4">
-              {/* Edit Mode Controls with Animation */}
-              <Animated.View
-                className="relative mb-4 z-[10000]"
+            <View className="flex-row items-baseline">
+              <ThemedText className="text-3xl font-gaegu text-key">
+                {getMonthName(selectedMonth)}
+              </ThemedText>
+              <Text className="text-xl">
+                {MONTH_EMOJIS[getMonthName(selectedMonth)]}
+              </Text>
+              <ThemedText className="text-xl font-gaegu text-gray-400 ml-2">
+                {selectedYear}
+              </ThemedText>
+              <IconSymbol
+                name="chevron.right"
+                size={18}
+                color="#3D3D3D"
                 style={{
-                  opacity: fadeAnim,
-                  transform: [
-                    {
-                      translateY: fadeAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [-20, 0],
-                      }),
-                    },
-                  ],
-                  height: 40, // 버튼 컨테이너 높이 설정
+                  transform: [{ rotate: "90deg" }],
+                  marginLeft: 4,
                 }}
-              >
-                {/* Background Button */}
-                <TouchableOpacity
-                  className="absolute right-12 bg-gray-100 p-[8px] rounded-full"
-                  activeOpacity={0.9}
-                  onPress={toggleBackgroundPicker}
-                  style={{
-                    elevation: 5, // Android에서 z-index 효과를 위해 추가
-                  }}
-                >
-                  <IconSymbol
-                    name="photo.on.rectangle"
-                    size={24}
-                    color="#3D3D3D"
-                  />
-                </TouchableOpacity>
-
-                {/* Camera Button */}
-                <TouchableOpacity
-                  className="absolute right-0 bg-key p-[8px] rounded-full"
-                  activeOpacity={0.9}
-                  onPress={handlePickImages}
-                  style={{
-                    elevation: 5, // Android에서 z-index 효과를 위해 추가
-                  }}
-                >
-                  <IconSymbol name="camera" size={24} color="#fff" />
-                </TouchableOpacity>
-              </Animated.View>
-
-              {/* Collage Area */}
-              <View
-                ref={collageAreaRef}
-                className={`bg-white/90 rounded-2xl shadow-sm ${
-                  selectedPhotos.length > 0 ? "bg-transparent" : "bg-white/80"
-                }`}
-                style={{
-                  height: 200,
-                  zIndex: 1000,
-                  elevation: 5, // Android에서 z-index 효과를 위해 추가
-                }}
-                onLayout={(event) => {
-                  const { width, height } = event.nativeEvent.layout;
-                  setCollageAreaSize({ width, height });
-                }}
-              >
-                {selectedPhotos.length > 0 ? (
-                  <View className="w-full h-full">
-                    {selectedPhotos.map((photo, index) => {
-                      const panResponder = createPanResponder(index);
-                      const resizeRotatePanResponder =
-                        createResizeRotatePanResponder(index);
-                      const isActive = activePhotoIndex === index;
-
-                      return (
-                        <View
-                          key={index}
-                          className="absolute"
-                          style={{
-                            width: 160,
-                            height: 160,
-                            left: photo.position.x,
-                            top: photo.position.y,
-                            zIndex: photo.zIndex,
-                          }}
-                        >
-                          <TouchableOpacity
-                            activeOpacity={0.9}
-                            onPress={() => handlePhotoPress(index)}
-                          >
-                            <Animated.View
-                              {...(mode === "edit"
-                                ? panResponder.panHandlers
-                                : {})}
-                              className="w-full h-full rounded-lg overflow-hidden shadow-md"
-                              style={{
-                                transform: [
-                                  {
-                                    rotate:
-                                      photoAnimations[
-                                        index
-                                      ]?.rotation.interpolate({
-                                        inputRange: [-360, 360],
-                                        outputRange: ["-360deg", "360deg"],
-                                      }) || `${photo.rotation}deg`,
-                                  },
-                                  {
-                                    scale:
-                                      photoAnimations[index]?.scale ||
-                                      photo.scale,
-                                  },
-                                ],
-                                borderWidth:
-                                  isActive && mode === "edit" ? 2 : 0,
-                                borderColor: "#3498db",
-                                borderRadius: 8,
-                              }}
-                            >
-                              {photo.filter && photo.filter !== "normal" ? (
-                                <View style={{ width: "100%", height: "100%" }}>
-                                  {(() => {
-                                    try {
-                                      // 필터 ID에 따라 적절한 필터 컴포넌트 반환
-                                      switch (photo.filter) {
-                                        case "grayscale":
-                                          return (
-                                            <GrayScaleFilter photo={photo} />
-                                          );
-                                        case "sepia":
-                                          return <SepiaFilter photo={photo} />;
-                                        case "oldfilm":
-                                          return (
-                                            <OldFilmFilter photo={photo} />
-                                          );
-                                        case "brightness":
-                                          return (
-                                            <BrightnessFilter photo={photo} />
-                                          );
-                                        case "contrast":
-                                          return (
-                                            <ContrastFilter photo={photo} />
-                                          );
-                                        case "highteen":
-                                          return (
-                                            <HighTeenFilter photo={photo} />
-                                          );
-                                        // 다른 필터들도 여기에 추가
-                                        default:
-                                          return (
-                                            <Image
-                                              source={{ uri: photo.uri }}
-                                              style={{
-                                                width: "100%",
-                                                height: "100%",
-                                              }}
-                                              resizeMode="contain"
-                                            />
-                                          );
-                                      }
-                                    } catch (error) {
-                                      console.error("필터 렌더링 오류:", error);
-                                      // 오류 발생 시 기본 이미지 표시
-                                      return (
-                                        <Image
-                                          source={{ uri: photo.uri }}
-                                          style={{
-                                            width: "100%",
-                                            height: "100%",
-                                          }}
-                                          resizeMode="contain"
-                                        />
-                                      );
-                                    }
-                                  })()}
-                                </View>
-                              ) : (
-                                <Image
-                                  source={{ uri: photo.uri }}
-                                  style={{ width: "100%", height: "100%" }}
-                                  resizeMode="contain"
-                                />
-                              )}
-                            </Animated.View>
-                          </TouchableOpacity>
-
-                          {/* 크기 조절 및 회전 핸들 컴포넌트 - 편집 모드일 때만 표시 */}
-                          {mode === "edit" && (
-                            <ResizeRotateHandle
-                              isActive={isActive}
-                              photoIndex={index}
-                              photo={photo}
-                              photoAnimations={photoAnimations}
-                              panResponder={resizeRotatePanResponder}
-                              onDelete={handleDeletePhoto}
-                            />
-                          )}
-                        </View>
-                      );
-                    })}
-                  </View>
-                ) : (
-                  <View className="items-center justify-center p-8 h-full">
-                    <ThemedText className="text-gray-400">
-                      {mode === "edit"
-                        ? "사진을 추가하여 콜라주를 만들어보세요"
-                        : "이번 달 기록이 없습니다"}
-                    </ThemedText>
-                  </View>
-                )}
-              </View>
-            </ScrollView>
+              />
+            </View>
           </TouchableOpacity>
-        </ImageBackground>
+
+          {/* Header Right Buttons */}
+          <View className="flex-row items-center space-x-2">
+            {/* Save Button (Edit Mode Only) */}
+            {mode === "edit" && (
+              <TouchableOpacity
+                onPress={
+                  photos && photos.length > 0
+                    ? handleEditPhotos
+                    : handleSavePhotos
+                }
+                className="bg-blue-500 px-4 py-2 rounded-lg"
+                activeOpacity={0.9}
+                disabled={isSaving || selectedPhotos.length === 0}
+                style={{
+                  opacity: isSaving || selectedPhotos.length === 0 ? 0.5 : 1,
+                }}
+              >
+                <Text className="text-white font-medium">
+                  {isSaving ? "저장 중..." : "저장"}
+                </Text>
+              </TouchableOpacity>
+            )}
+
+            {/* Mode Toggle Button */}
+            <TouchableOpacity
+              onPress={toggleMode}
+              activeOpacity={0.9}
+              className={`p-[8px] rounded-full ${
+                mode === "edit" ? "bg-key" : "bg-gray-100"
+              }`}
+            >
+              <IconSymbol
+                name={mode === "edit" ? "xmark" : "pencil"}
+                size={22}
+                color={mode === "edit" ? "#fff" : "#3D3D3D"}
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* Main Content with Background */}
+        <View
+          ref={mainContentRef}
+          className="flex-1 overflow-hidden"
+          onLayout={(event) => {
+            const { width, height, x, y } = event.nativeEvent.layout;
+            setMainContentSize({ width, height, x, y });
+          }}
+        >
+          <ImageBackground
+            source={
+              selectedBackground ? { uri: selectedBackground } : undefined
+            }
+            style={{ flex: 1 }}
+            imageStyle={{ opacity: 0.65 }}
+          >
+            <TouchableOpacity
+              activeOpacity={1}
+              onPress={handleBackgroundTap}
+              style={{ flex: 1 }}
+            >
+              <ScrollView className="flex-1 p-4">
+                {/* Edit Mode Controls with Animation */}
+                <Animated.View
+                  className="relative mb-4 z-[10000]"
+                  style={{
+                    opacity: fadeAnim,
+                    transform: [
+                      {
+                        translateY: fadeAnim.interpolate({
+                          inputRange: [0, 1],
+                          outputRange: [-20, 0],
+                        }),
+                      },
+                    ],
+                    height: 40, // 버튼 컨테이너 높이 설정
+                  }}
+                >
+                  {/* Background Button */}
+                  <TouchableOpacity
+                    className="absolute right-12 bg-gray-100 p-[8px] rounded-full"
+                    activeOpacity={0.9}
+                    onPress={toggleBackgroundPicker}
+                    style={{
+                      elevation: 5, // Android에서 z-index 효과를 위해 추가
+                    }}
+                  >
+                    <IconSymbol
+                      name="photo.on.rectangle"
+                      size={24}
+                      color="#3D3D3D"
+                    />
+                  </TouchableOpacity>
+
+                  {/* Camera Button */}
+                  <TouchableOpacity
+                    className="absolute right-0 bg-key p-[8px] rounded-full"
+                    activeOpacity={0.9}
+                    onPress={handlePickImages}
+                    style={{
+                      elevation: 5, // Android에서 z-index 효과를 위해 추가
+                    }}
+                  >
+                    <IconSymbol name="camera" size={24} color="#fff" />
+                  </TouchableOpacity>
+                </Animated.View>
+
+                {/* Collage Area */}
+                <View
+                  ref={collageAreaRef}
+                  className={`bg-white/90 rounded-2xl shadow-sm ${
+                    selectedPhotos.length > 0 ? "bg-transparent" : "bg-white/80"
+                  }`}
+                  style={{
+                    height: 200,
+                    zIndex: 1000,
+                    elevation: 5, // Android에서 z-index 효과를 위해 추가
+                  }}
+                  onLayout={(event) => {
+                    const { width, height } = event.nativeEvent.layout;
+                    setCollageAreaSize({ width, height });
+                  }}
+                >
+                  {selectedPhotos.length > 0 ? (
+                    <View className="w-full h-full">
+                      {selectedPhotos.map((photo, index) => {
+                        const panResponder = createPanResponder(index);
+                        const resizeRotatePanResponder =
+                          createResizeRotatePanResponder(index);
+                        const isActive = activePhotoIndex === index;
+
+                        return (
+                          <View
+                            key={index}
+                            className="absolute"
+                            style={{
+                              width: 160,
+                              height: 160,
+                              left: photo.position.x,
+                              top: photo.position.y,
+                              zIndex: photo.zIndex,
+                            }}
+                          >
+                            <TouchableOpacity
+                              activeOpacity={0.9}
+                              onPress={() => handlePhotoPress(index)}
+                            >
+                              <Animated.View
+                                {...(mode === "edit"
+                                  ? panResponder.panHandlers
+                                  : {})}
+                                className="w-full h-full rounded-lg overflow-hidden shadow-md"
+                                style={{
+                                  transform: [
+                                    {
+                                      rotate:
+                                        photoAnimations[
+                                          index
+                                        ]?.rotation.interpolate({
+                                          inputRange: [-360, 360],
+                                          outputRange: ["-360deg", "360deg"],
+                                        }) || `${photo.rotation}deg`,
+                                    },
+                                    {
+                                      scale:
+                                        photoAnimations[index]?.scale ||
+                                        photo.scale,
+                                    },
+                                  ],
+                                  borderWidth:
+                                    isActive && mode === "edit" ? 2 : 0,
+                                  borderColor: "#3498db",
+                                  borderRadius: 8,
+                                }}
+                              >
+                                {photo.filter && photo.filter !== "normal" ? (
+                                  <View
+                                    style={{ width: "100%", height: "100%" }}
+                                  >
+                                    {(() => {
+                                      try {
+                                        // 필터 ID에 따라 적절한 필터 컴포넌트 반환
+                                        switch (photo.filter) {
+                                          case "grayscale":
+                                            return (
+                                              <GrayScaleFilter photo={photo} />
+                                            );
+                                          case "sepia":
+                                            return (
+                                              <SepiaFilter photo={photo} />
+                                            );
+                                          case "oldfilm":
+                                            return (
+                                              <OldFilmFilter photo={photo} />
+                                            );
+                                          case "brightness":
+                                            return (
+                                              <BrightnessFilter photo={photo} />
+                                            );
+                                          case "contrast":
+                                            return (
+                                              <ContrastFilter photo={photo} />
+                                            );
+                                          case "highteen":
+                                            return (
+                                              <HighTeenFilter photo={photo} />
+                                            );
+                                          // 다른 필터들도 여기에 추가
+                                          default:
+                                            return (
+                                              <Image
+                                                source={{ uri: photo.uri }}
+                                                style={{
+                                                  width: "100%",
+                                                  height: "100%",
+                                                }}
+                                                resizeMode="contain"
+                                              />
+                                            );
+                                        }
+                                      } catch (error) {
+                                        console.error(
+                                          "필터 렌더링 오류:",
+                                          error
+                                        );
+                                        // 오류 발생 시 기본 이미지 표시
+                                        return (
+                                          <Image
+                                            source={{ uri: photo.uri }}
+                                            style={{
+                                              width: "100%",
+                                              height: "100%",
+                                            }}
+                                            resizeMode="contain"
+                                          />
+                                        );
+                                      }
+                                    })()}
+                                  </View>
+                                ) : (
+                                  <Image
+                                    source={{ uri: photo.uri }}
+                                    style={{ width: "100%", height: "100%" }}
+                                    resizeMode="contain"
+                                  />
+                                )}
+                              </Animated.View>
+                            </TouchableOpacity>
+
+                            {/* 크기 조절 및 회전 핸들 컴포넌트 - 편집 모드일 때만 표시 */}
+                            {mode === "edit" && (
+                              <ResizeRotateHandle
+                                isActive={isActive}
+                                photoIndex={index}
+                                photo={photo}
+                                photoAnimations={photoAnimations}
+                                panResponder={resizeRotatePanResponder}
+                                onDelete={handleDeletePhoto}
+                              />
+                            )}
+                          </View>
+                        );
+                      })}
+                    </View>
+                  ) : (
+                    <View className="items-center justify-center p-8 h-full">
+                      <ThemedText className="text-gray-400">
+                        {mode === "edit"
+                          ? "사진을 추가하여 콜라주를 만들어보세요"
+                          : "이번 달 기록이 없습니다"}
+                      </ThemedText>
+                    </View>
+                  )}
+                </View>
+              </ScrollView>
+            </TouchableOpacity>
+          </ImageBackground>
+        </View>
+
+        {/* Background Selector Component */}
+        <BackgroundSelects
+          showBackgroundPicker={showBackgroundPicker}
+          backgroundPickerAnim={backgroundPickerAnim}
+          activeCategory={activeCategory}
+          selectedBackground={selectedBackground}
+          setActiveCategory={setActiveCategory}
+          setSelectedBackground={setSelectedBackground}
+          toggleBackgroundPicker={toggleBackgroundPicker}
+        />
+
+        {/* Date Picker Modal */}
+        <DatePickerModal
+          showDatePicker={showDatePicker}
+          setShowDatePicker={setShowDatePicker}
+          selectedYear={selectedYear}
+          setSelectedYear={setSelectedYear}
+          selectedMonth={selectedMonth}
+          setSelectedMonth={setSelectedMonth}
+        />
+
+        {/* Photo Action Sheet */}
+        <PhotoActionSheet
+          visible={showActionSheet}
+          actionSheetAnim={actionSheetAnim}
+          onCrop={handleCropPhoto}
+          onFilter={handleFilterPhoto}
+          onClose={() => toggleActionSheet(false)}
+        />
+
+        {/* CropPhotoModal 추가 */}
+        <CropPhotoModal
+          visible={showCropModal}
+          onClose={() => setShowCropModal(false)}
+          onSave={handleSaveCroppedImage}
+          imageUri={
+            activePhotoIndex !== null
+              ? selectedPhotos[activePhotoIndex]?.uri
+              : null
+          }
+        />
+
+        {/* Filter Selector Component */}
+        <FilterSelects
+          showFilterPicker={showFilterPicker}
+          filterPickerAnim={filterPickerAnim}
+          activeCategory={activeFilterCategory}
+          selectedFilter={selectedFilter}
+          setActiveCategory={setActiveFilterCategory}
+          toggleFilterPicker={toggleFilterPicker}
+          onApplyFilter={applyFilter}
+        />
+
+        <PhotoModal
+          showPhotoModal={showPhotoModal}
+          handleClosePhotoModal={handleClosePhotoModal}
+          activePhotoIndex={activePhotoIndex}
+          selectedPhotos={selectedPhotos}
+          handleEditMemo={handleEditMemo}
+        />
+        {/* 메모 편집 모달 */}
+        <MemoEditModal
+          showMemoModal={showMemoModal}
+          setShowMemoModal={setShowMemoModal}
+          memoText={memoText}
+          setMemoText={setMemoText}
+          handleSaveMemo={handleSaveMemo}
+        />
       </View>
-
-      {/* Background Selector Component */}
-      <BackgroundSelects
-        showBackgroundPicker={showBackgroundPicker}
-        backgroundPickerAnim={backgroundPickerAnim}
-        activeCategory={activeCategory}
-        selectedBackground={selectedBackground}
-        setActiveCategory={setActiveCategory}
-        setSelectedBackground={setSelectedBackground}
-        toggleBackgroundPicker={toggleBackgroundPicker}
-      />
-
-      {/* Date Picker Modal */}
-      <DatePickerModal
-        showDatePicker={showDatePicker}
-        setShowDatePicker={setShowDatePicker}
-        selectedYear={selectedYear}
-        setSelectedYear={setSelectedYear}
-        selectedMonth={selectedMonth}
-        setSelectedMonth={setSelectedMonth}
-      />
-
-      {/* Photo Action Sheet */}
-      <PhotoActionSheet
-        visible={showActionSheet}
-        actionSheetAnim={actionSheetAnim}
-        onCrop={handleCropPhoto}
-        onFilter={handleFilterPhoto}
-        onClose={() => toggleActionSheet(false)}
-      />
-
-      {/* CropPhotoModal 추가 */}
-      <CropPhotoModal
-        visible={showCropModal}
-        onClose={() => setShowCropModal(false)}
-        onSave={handleSaveCroppedImage}
-        imageUri={
-          activePhotoIndex !== null
-            ? selectedPhotos[activePhotoIndex]?.uri
-            : null
-        }
-      />
-
-      {/* Filter Selector Component */}
-      <FilterSelects
-        showFilterPicker={showFilterPicker}
-        filterPickerAnim={filterPickerAnim}
-        activeCategory={activeFilterCategory}
-        selectedFilter={selectedFilter}
-        setActiveCategory={setActiveFilterCategory}
-        toggleFilterPicker={toggleFilterPicker}
-        onApplyFilter={applyFilter}
-      />
-
-      <PhotoModal
-        showPhotoModal={showPhotoModal}
-        handleClosePhotoModal={handleClosePhotoModal}
-        activePhotoIndex={activePhotoIndex}
-        selectedPhotos={selectedPhotos}
-        handleEditMemo={handleEditMemo}
-      />
-      {/* 메모 편집 모달 */}
-      <MemoEditModal
-        showMemoModal={showMemoModal}
-        setShowMemoModal={setShowMemoModal}
-        memoText={memoText}
-        setMemoText={setMemoText}
-        handleSaveMemo={handleSaveMemo}
-      />
     </View>
   );
 }
