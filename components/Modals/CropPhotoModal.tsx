@@ -120,9 +120,15 @@ export default function CropPhotoModal({
       // 경로의 경계 상자(bounding box) 계산
       const bounds = skPath.getBounds();
 
-      // 경계 상자 크기의 새 Surface 생성
-      const width = Math.ceil(bounds.width);
-      const height = Math.ceil(bounds.height);
+      // 원본 이미지 크기와 화면에 표시된 이미지 크기의 비율 계산
+      const scaleX = skiaImage.width() / imageSize.width;
+      const scaleY = skiaImage.height() / imageSize.height;
+
+      // 경계 상자 크기의 새 Surface 생성 (원본 이미지 크기 기준으로 조정)
+      const width = Math.ceil(bounds.width * scaleX);
+      const height = Math.ceil(bounds.height * scaleY);
+
+      // 고해상도 Surface 생성
       const surface = Skia.Surface.Make(width, height);
 
       if (!surface) {
@@ -132,13 +138,16 @@ export default function CropPhotoModal({
 
       const canvas = surface.getCanvas();
 
-      // 캔버스 원점을 경계 상자의 좌상단으로 이동
-      canvas.translate(-bounds.x, -bounds.y);
+      // 캔버스 원점을 경계 상자의 좌상단으로 이동 (원본 이미지 크기 기준으로 조정)
+      canvas.translate(-bounds.x * scaleX, -bounds.y * scaleY);
 
-      // 경로로 클리핑 (대체 방법)
+      // 캔버스 스케일 조정
+      canvas.scale(scaleX, scaleY);
+
+      // 경로로 클리핑
       canvas.clipPath(skPath, 1, true); // 1은 Intersect 연산을 의미
 
-      // 이미지 그리기 대체 방법
+      // 이미지 그리기
       const src = {
         x: 0,
         y: 0,
@@ -151,14 +160,18 @@ export default function CropPhotoModal({
         width: imageSize.width,
         height: imageSize.height,
       };
+
+      // 고품질 페인트 설정 (대체 방법)
       const paint = Skia.Paint();
       paint.setAntiAlias(true);
+      // 필터 품질 설정이 없는 경우 생략
+
       canvas.drawImageRect(skiaImage, src, dest, paint);
 
       // 이미지 추출
       const image = surface.makeImageSnapshot();
 
-      // 스냅샷을 PNG로 인코딩
+      // 스냅샷을 PNG로 인코딩 (최대 품질)
       const data = image.encodeToBase64(ImageFormat.PNG, 100);
 
       // 임시 파일 경로 생성
