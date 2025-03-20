@@ -68,19 +68,7 @@ function RootLayoutNav() {
   };
 
   useEffect(() => {
-    async function prepare() {
-      try {
-        await SplashScreen.preventAutoHideAsync();
-        await checkOnboarding(); // 예제 대기 시간
-      } catch (e) {
-        console.warn(e);
-      } finally {
-        setTimeout(async () => {
-          await SplashScreen.hideAsync();
-        }, 3000);
-      }
-    }
-    prepare();
+    checkOnboarding();
   }, []);
 
   useEffect(() => {
@@ -115,7 +103,9 @@ export default function RootLayout() {
   const { loading } = useAuth();
   const [isFirstLaunch, setIsFirstLaunch] = useState<boolean | null>(null);
   const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
+  const [appIsReady, setAppIsReady] = useState(false);
+
+  const [fontsLoaded] = useFonts({
     SpaceMono: require("../assets/fonts/SpaceMono-Regular.ttf"),
     "Poppins-Regular": Poppins_400Regular,
     "Poppins-Medium": Poppins_500Medium,
@@ -132,22 +122,42 @@ export default function RootLayout() {
     "Noto-Serif-Bold": NotoSerif_700Bold,
   });
 
+  // 앱 준비 상태 처리
   useEffect(() => {
-    if (loaded) {
-      SplashScreen.hideAsync();
-    }
-  }, [loaded]);
+    async function prepare() {
+      try {
+        // 폰트 로딩 및 기타 리소스 준비가 완료될 때까지 대기
+        await SplashScreen.preventAutoHideAsync();
 
-  // useEffect(() => {
-  //   MobileAds().initialize();
-  // }, []);
-  // useEffect(() => {
-  //   MobileAds()
-  //     .initialize()
-  //     .then((adapterStatuses) => {
-  //       console.log("Initialization complete!");
-  //     });
-  // }, []);
+        // 온보딩 상태 확인 등 다른 초기화 작업 수행
+        // await checkOnboarding();
+      } catch (e) {
+        console.warn("Error preparing app:", e);
+      } finally {
+        // 모든 준비가 완료되면 앱 준비 상태를 true로 설정
+        setAppIsReady(true);
+      }
+    }
+
+    prepare();
+  }, []);
+
+  // 폰트 로딩 및 앱 준비 상태 모니터링
+  useEffect(() => {
+    if (appIsReady && fontsLoaded) {
+      // 폰트가 로드되고 앱이 준비되면 스플래시 스크린 숨기기
+      const hideSplash = async () => {
+        await SplashScreen.hideAsync();
+      };
+
+      hideSplash();
+    }
+  }, [appIsReady, fontsLoaded]);
+
+  // 앱이 준비되지 않았으면 null 반환 (스플래시 스크린 유지)
+  if (!appIsReady || !fontsLoaded) {
+    return null;
+  }
 
   return (
     <QueryClientProvider client={queryClient}>
