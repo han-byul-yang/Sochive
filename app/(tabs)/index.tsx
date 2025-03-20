@@ -92,7 +92,7 @@ export default function ArchiveScreen() {
   useEffect(() => {
     setSelectedPhotos(photos?.[0]?.photos || []);
     setSelectedBackground(photos?.[0]?.background || null);
-  }, [photos, selectedMonth, selectedYear]);
+  }, [selectedMonth, selectedYear]);
 
   // 애니메이션 값 추가
   const fadeAnim = useRef(new Animated.Value(0)).current;
