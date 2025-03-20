@@ -88,11 +88,19 @@ export default function ArchiveScreen() {
   );
   // 월 이름 가져오기 함수 추가
   const getMonthName = (month: number) => MONTHS[month - 1];
+  const isFirstRender = useRef(true);
 
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    if (mode === "edit") {
+      return;
+    }
     setSelectedPhotos(photos?.[0]?.photos || []);
     setSelectedBackground(photos?.[0]?.background || null);
-  }, [selectedMonth, selectedYear]);
+  }, [photos]);
 
   // 애니메이션 값 추가
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -134,11 +142,16 @@ export default function ArchiveScreen() {
     toggleActionSheet(false);
   };
 
-  // 모드 전환 애니메이션
-  const toggleMode = () => {
-    const newMode = mode === "read" ? "edit" : "read";
-    setMode(newMode);
+  useEffect(() => {
+    toggleMode(mode);
+  }, [mode]);
 
+  const handleModeToggle = () => {
+    setMode(mode === "edit" ? "read" : "edit");
+  };
+
+  // 모드 전환 애니메이션
+  const toggleMode = (newMode: "read" | "edit") => {
     Animated.timing(fadeAnim, {
       toValue: newMode === "edit" ? 1 : 0,
       duration: 200,
@@ -235,7 +248,6 @@ export default function ArchiveScreen() {
           // 새 위치 계산
           const newX = newPhotos[index].position.x + gestureState.dx;
           const newY = newPhotos[index].position.y + gestureState.dy;
-
           // 위치 업데이트
           newPhotos[index].position = {
             x: newX,
@@ -670,7 +682,7 @@ export default function ArchiveScreen() {
 
             {/* Mode Toggle Button */}
             <TouchableOpacity
-              onPress={toggleMode}
+              onPress={handleModeToggle}
               activeOpacity={0.9}
               className={`p-[8px] rounded-full ${
                 mode === "edit" ? "bg-key" : "bg-gray-100"
@@ -943,6 +955,7 @@ export default function ArchiveScreen() {
           setSelectedYear={setSelectedYear}
           selectedMonth={selectedMonth}
           setSelectedMonth={setSelectedMonth}
+          setMode={setMode}
         />
 
         {/* Photo Action Sheet */}
@@ -996,6 +1009,5 @@ export default function ArchiveScreen() {
     </View>
   );
 }
-
 // 사진 테두리 조절
 // crop 한 사진 원본 저장

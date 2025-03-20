@@ -11,6 +11,7 @@ interface DatePickerModalProps {
   setSelectedYear: React.Dispatch<React.SetStateAction<number>>;
   selectedMonth: number;
   setSelectedMonth: React.Dispatch<React.SetStateAction<number>>;
+  setMode: React.Dispatch<React.SetStateAction<"read" | "edit">>;
 }
 
 export default function DatePickerModal({
@@ -20,6 +21,7 @@ export default function DatePickerModal({
   setSelectedYear,
   selectedMonth,
   setSelectedMonth,
+  setMode,
 }: DatePickerModalProps) {
   const getMonthName = (month: number) => MONTHS[month - 1];
 
@@ -72,6 +74,7 @@ export default function DatePickerModal({
                 <TouchableOpacity
                   key={month}
                   onPress={() => {
+                    setMode("read");
                     setSelectedMonth(month);
                     setShowDatePicker(false);
                   }}
