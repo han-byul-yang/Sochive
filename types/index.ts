@@ -1,6 +1,7 @@
 import { FieldValue, Timestamp } from "firebase/firestore";
 
 export type Photo = {
+  originalUri: string;
   uri: string;
   position: {
     x: number;

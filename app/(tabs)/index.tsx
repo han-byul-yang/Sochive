@@ -225,6 +225,7 @@ export default function ArchiveScreen() {
 
         return {
           uri: asset.uri,
+          originalUri: asset.uri,
           position: {
             x: centerX + randomOffsetX,
             y: centerY + randomOffsetY,

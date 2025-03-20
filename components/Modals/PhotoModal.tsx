@@ -34,11 +34,21 @@ export default function PhotoModal({
 
         {activePhotoIndex !== null && (
           <View className="w-full h-[85%] justify-center items-center">
-            <Image
-              source={{ uri: selectedPhotos[activePhotoIndex]?.uri }}
-              style={{ width: "90%", height: "70%" }}
-              resizeMode="contain"
-            />
+            {selectedPhotos[activePhotoIndex]?.originalUri ? (
+              <Image
+                source={{
+                  uri: selectedPhotos[activePhotoIndex]?.originalUri,
+                }}
+                style={{ width: "90%", height: "70%" }}
+                resizeMode="contain"
+              />
+            ) : (
+              <Image
+                source={require("@/assets/images/noImage.png")}
+                style={{ width: "90%", height: "70%" }}
+                resizeMode="contain"
+              />
+            )}
 
             {/* 메모 표시 영역 */}
             <View className="w-[90%] mt-4 bg-white/10 rounded-lg p-4">
