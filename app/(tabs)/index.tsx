@@ -615,7 +615,7 @@ export default function ArchiveScreen() {
       {/* 로딩 인디케이터 */}
       {isPhotosLoading && (
         <View
-          className="absolute inset-0 h-full w-full bg-black/30 items-center justify-center z-50"
+          className="absolute inset-0 h-full w-full bg-transparent items-center justify-center z-50"
           style={{ elevation: 5 }}
         >
           <View className="bg-white p-5 rounded-xl items-center">

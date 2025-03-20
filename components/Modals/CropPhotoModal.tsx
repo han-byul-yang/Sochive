@@ -84,16 +84,28 @@ export default function CropPhotoModal({
       if (paths.length > 0) return;
 
       const { locationX, locationY } = evt.nativeEvent;
+
+      // 이미지 경계 내부로 제한
+      const boundedX = Math.max(0, Math.min(locationX, imageSize.width));
+      const boundedY = Math.max(0, Math.min(locationY, imageSize.height));
+
       setIsDrawing(true);
-      setCurrentPath(`M ${locationX} ${locationY}`);
+      setCurrentPath(`M ${boundedX} ${boundedY}`);
     },
     onPanResponderMove: (evt) => {
       if (!isDrawing || paths.length > 0) return;
+
       const { locationX, locationY } = evt.nativeEvent;
-      setCurrentPath((prev) => `${prev} L ${locationX} ${locationY}`);
+
+      // 이미지 경계 내부로 제한
+      const boundedX = Math.max(0, Math.min(locationX, imageSize.width));
+      const boundedY = Math.max(0, Math.min(locationY, imageSize.height));
+
+      setCurrentPath((prev) => `${prev} L ${boundedX} ${boundedY}`);
     },
     onPanResponderRelease: () => {
       if (currentPath && paths.length === 0) {
+        // 경로 닫기 전에 마지막 점이 이미지 경계 내에 있는지 확인
         setCurrentPath((prev) => `${prev} Z`);
         setPaths((prev) => [...prev, currentPath + " Z"]);
         setCurrentPath("");
