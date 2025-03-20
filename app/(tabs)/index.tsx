@@ -18,13 +18,11 @@ import { ThemedText } from "@/components/ThemedText";
 import BackgroundSelects from "@/components/BackgroundSelects";
 import { pickMultipleImages } from "@/utils/getPhotos";
 import DatePickerModal from "@/components/Modals/DatePickerModal";
-import { MaterialIcons } from "@expo/vector-icons";
 import { MONTH_EMOJIS, MONTHS } from "@/constants/Months";
 import ResizeRotateHandle from "@/components/ResizeRotateHandle";
 import PhotoActionSheet from "@/components/PhotoActionSheet";
 import CropPhotoModal from "@/components/Modals/CropPhotoModal";
 import FilterSelects from "@/components/FilterSelects";
-import { FILTERS } from "@/constants/Filters";
 import {
   BrightnessFilter,
   ContrastFilter,
@@ -34,7 +32,6 @@ import {
   SepiaFilter,
 } from "@/components/Filters";
 import useAuth from "@/contexts/AuthContext";
-import { createPhotoStore } from "@/lib/firestore";
 import { serverTimestamp } from "firebase/firestore";
 import { Photo } from "@/types";
 import {
@@ -44,6 +41,7 @@ import {
 } from "@/hooks/useGetPhotos";
 import PhotoModal from "@/components/Modals/PhotoModal";
 import MemoEditModal from "@/components/Modals/MemoEditModal";
+import { cloneDeep, isEqual } from "lodash";
 
 export default function ArchiveScreen() {
   const [mode, setMode] = useState<"read" | "edit">("read");
@@ -52,6 +50,7 @@ export default function ArchiveScreen() {
   const [selectedBackground, setSelectedBackground] = useState<string | null>(
     null
   );
+  const [resetPhotos, setResetPhotos] = useState(false);
   const [activeCategory, setActiveCategory] = useState<string>("hot");
   const [selectedPhotos, setSelectedPhotos] = useState<Photo[]>([]);
   const [activePhotoIndex, setActivePhotoIndex] = useState<number | null>(null);
@@ -95,11 +94,24 @@ export default function ArchiveScreen() {
       isFirstRender.current = false;
       return;
     }
+
     if (mode === "edit") {
       return;
     }
-    setSelectedPhotos(photos?.[0]?.photos || []);
-    setSelectedBackground(photos?.[0]?.background || null);
+
+    const serverPhotos = photos?.[0]?.photos || [];
+    const serverBackground = photos?.[0]?.background || null;
+    // 깊은 복사 및 비교
+    const deepCopiedServerPhotos = cloneDeep(serverPhotos);
+    const deepCopiedSelectedPhotos = cloneDeep(selectedPhotos);
+
+    // 현재 상태와 서버 데이터가 다를 경우에만 업데이트
+    if (!isEqual(deepCopiedServerPhotos, deepCopiedSelectedPhotos)) {
+      setSelectedPhotos(deepCopiedServerPhotos);
+    }
+    if (serverBackground !== selectedBackground) {
+      setSelectedBackground(serverBackground);
+    }
   }, [photos]);
 
   // 애니메이션 값 추가
@@ -121,6 +133,14 @@ export default function ArchiveScreen() {
     initialRotation: 0,
     initialScale: 1,
   });
+
+  useEffect(() => {
+    if (resetPhotos) {
+      setSelectedPhotos(photos?.[0]?.photos || []);
+      setSelectedBackground(photos?.[0]?.background || null);
+      setResetPhotos(false);
+    }
+  }, [resetPhotos]);
 
   // 사진이 추가될 때마다 애니메이션 값 초기화
   useEffect(() => {
@@ -157,6 +177,10 @@ export default function ArchiveScreen() {
       duration: 200,
       useNativeDriver: true,
     }).start();
+    if (newMode === "read") {
+      console.log("resetPhotos");
+      setResetPhotos(true);
+    }
 
     // 편집 모드를 종료하면 배경 선택기도 닫기
     if (newMode === "read" && showBackgroundPicker) {
