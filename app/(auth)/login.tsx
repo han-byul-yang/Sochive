@@ -14,6 +14,7 @@ import { useRouter } from "expo-router";
 import { login } from "@/lib/auth/login";
 import { sendVerificationEmail } from "@/lib/auth/emailVerify";
 import { User } from "firebase/auth";
+import AppleLogin from "@/components/auth/AppleLogin";
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -149,6 +150,7 @@ export default function LoginScreen() {
             </Text>
           </Pressable>
         </View>
+        <AppleLogin />
       </View>
     </KeyboardAvoidingView>
   );

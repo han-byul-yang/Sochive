@@ -10,6 +10,7 @@ module.exports = {
     ios: {
       bundleIdentifier: "com.sochive.app",
       supportsTablet: true,
+      usesAppleSignIn: true,
     },
     android: {
       config: {

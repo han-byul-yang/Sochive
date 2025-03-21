@@ -1,0 +1,81 @@
+name: Build iOS Simulator .app File
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-ios-simulator:
+    runs-on: macos-latest # ✅ 반드시 macOS 환경에서 실행해야 함
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4 # ✅ GitHub 리포지토리에서 코드 가져오기
+
+      - name: Install dependencies
+        run: npm install # ✅ Node.js 패키지 설치
+
+      - name: Install Expo CLI and EAS CLI
+        run: npm install -g expo-cli eas-cli # ✅ Expo 및 EAS CLI 설치
+
+      - name: Run Expo Prebuild
+        run: expo prebuild # ✅ GitHub Actions에서 ios/ 폴더 자동 생성
+
+      - name: Verify ios directory
+        run: ls -l ios/ || echo "⚠️ ios folder not found!"
+
+      - name: Install CocoaPods
+        run: |
+          cd ios
+          pod install --repo-update  # ✅ CocoaPods 의존성 설치
+          cd ..
+
+      - name: List Xcode Schemes
+        run: |
+          cd ios
+          xcodebuild -list  # ✅ 사용 가능한 Scheme 목록 출력
+          cd ..
+
+      - name: Build iOS Simulator .app File
+        run: |
+          xcodebuild -workspace ios/sochive.xcworkspace \
+            -scheme sochive \
+            -sdk iphonesimulator \
+            -configuration Release \
+            -derivedDataPath build | tee xcodebuild.log | tail -n 100  # ✅ 빌드 로그 저장
+
+      - name: Check if build succeeded
+        run: |
+          if [ ! -d "build/Build/Products/Release-iphonesimulator" ]; then
+            echo "❌ Build failed! Check xcodebuild.log"
+            exit 1
+          fi
+
+      - name: List built app files
+        run: ls -R build/Build/Products/Release-iphonesimulator/ # ✅ 빌드된 파일 목록 확인
+
+      - name: Zip the built app
+        run: |
+          if [ -d "build/Build/Products/Release-iphonesimulator/sochive.app" ]; then
+            cd build/Build/Products/Release-iphonesimulator
+            zip -r sochive.zip sochive.app
+            cd ../../../..
+          else
+            echo "❌ sochive.app not found!"
+            exit 1
+          fi
+
+      - name: Check if zip file exists
+        run: |
+          if [ ! -f "build/Build/Products/Release-iphonesimulator/sochive.zip" ]; then
+            echo "❌ sochive.zip not found!"
+            exit 1
+          fi
+
+      - name: Upload .app artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: iOS-Simulator-App
+          path: build/Build/Products/Release-iphonesimulator/sochive.zip
