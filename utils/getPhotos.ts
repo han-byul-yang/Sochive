@@ -1,6 +1,8 @@
 import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system";
-import { Alert, Image } from "react-native";
+import { Alert, Image, View } from "react-native";
+import { captureRef } from "react-native-view-shot";
+import * as MediaLibrary from "expo-media-library";
 
 export const saveImagePermanently = async (tempUri: string) => {
   const fileName = tempUri.split("/").pop();
@@ -71,4 +73,26 @@ export const pickMultipleImages = async () => {
       }
     }
   );
+};
+
+export const saveScreenshot = async (viewRef: React.RefObject<View>) => {
+  try {
+    const permission = await MediaLibrary.requestPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert("권한이 필요해요", "사진을 저장하려면 권한이 필요합니다.");
+      return;
+    }
+
+    const uri = await captureRef(viewRef, {
+      format: "png",
+      quality: 1,
+    });
+
+    const asset = await MediaLibrary.createAssetAsync(uri);
+    await MediaLibrary.createAlbumAsync("MyApp", asset, false);
+
+    Alert.alert("저장 완료", "이미지가 사진첩에 저장되었어요!");
+  } catch (error) {
+    console.error("스크린샷 저장 실패:", error);
+  }
 };

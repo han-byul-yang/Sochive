@@ -11,6 +11,7 @@ import {
   Modal,
   TextInput,
   ActivityIndicator,
+  TouchableWithoutFeedback,
 } from "react-native";
 import { useState, useMemo, useRef, useEffect } from "react";
 import { IconSymbol } from "@/components/ui/IconSymbol";
@@ -20,6 +21,7 @@ import {
   getImageSize,
   pickMultipleImages,
   saveImagePermanently,
+  saveScreenshot,
 } from "@/utils/getPhotos";
 import DatePickerModal from "@/components/Modals/DatePickerModal";
 import { MONTH_EMOJIS, MONTHS } from "@/constants/Months";
@@ -47,6 +49,7 @@ import PhotoModal from "@/components/Modals/PhotoModal";
 import MemoEditModal from "@/components/Modals/MemoEditModal";
 import { cloneDeep, isEqual } from "lodash";
 import { resizeByMaxDimension } from "@/utils/photoManipulation";
+import { captureRef } from "react-native-view-shot";
 
 export default function ArchiveScreen() {
   const [mode, setMode] = useState<"read" | "edit">("read");
@@ -656,6 +659,10 @@ export default function ArchiveScreen() {
     setOriginalUri(true);
   };
 
+  const handleSaveScreenshot = () => {
+    saveScreenshot(mainContentRef);
+  };
+
   return (
     <View className="flex-1 bg-white">
       {/* 로딩 인디케이터 */}
@@ -675,73 +682,86 @@ export default function ArchiveScreen() {
 
       <View className="flex-1 relative">
         {/* Header */}
-        <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-100">
-          <TouchableOpacity
-            onPress={() => setShowDatePicker(true)}
-            activeOpacity={0.9}
-            className="flex-row items-center"
-          >
-            <View className="flex-row items-baseline">
-              <ThemedText className="text-3xl font-gaegu text-key">
-                {getMonthName(selectedMonth)}
-              </ThemedText>
-              <Text className="text-xl">
-                {MONTH_EMOJIS[getMonthName(selectedMonth)]}
-              </Text>
-              <ThemedText className="text-xl font-gaegu text-gray-400 ml-2">
-                {selectedYear}
-              </ThemedText>
-              <IconSymbol
-                name="chevron.right"
-                size={18}
-                color="#3D3D3D"
-                style={{
-                  transform: [{ rotate: "90deg" }],
-                  marginLeft: 4,
-                }}
-              />
-            </View>
-          </TouchableOpacity>
-
-          {/* Header Right Buttons */}
-          <View className="flex-row items-center space-x-2">
-            {/* Save Button (Edit Mode Only) */}
-            {mode === "edit" && (
-              <TouchableOpacity
-                onPress={
-                  photos && photos.length > 0
-                    ? handleEditPhotos
-                    : handleSavePhotos
-                }
-                className="bg-blue-500 px-4 py-2 rounded-lg"
-                activeOpacity={0.9}
-                disabled={isSaving || selectedPhotos.length === 0}
-                style={{
-                  opacity: isSaving || selectedPhotos.length === 0 ? 0.5 : 1,
-                }}
-              >
-                <Text className="text-white font-medium">
-                  {isSaving ? "저장 중..." : "저장"}
-                </Text>
-              </TouchableOpacity>
-            )}
-
-            {/* Mode Toggle Button */}
+        <TouchableWithoutFeedback onPress={() => toggleActionSheet(false)}>
+          <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-100">
             <TouchableOpacity
-              onPress={handleModeToggle}
+              onPress={() => setShowDatePicker(true)}
               activeOpacity={0.9}
-              className={`p-[8px] rounded-full ${
-                mode === "edit" ? "bg-key" : "bg-gray-100"
-              }`}
+              className="flex-row items-center"
             >
-              <IconSymbol
-                name={mode === "edit" ? "xmark" : "pencil"}
-                size={22}
-                color={mode === "edit" ? "#fff" : "#3D3D3D"}
-              />
+              <View className="flex-row items-baseline">
+                <ThemedText className="text-3xl font-gaegu text-key">
+                  {getMonthName(selectedMonth)}
+                </ThemedText>
+                <Text className="text-xl">
+                  {MONTH_EMOJIS[getMonthName(selectedMonth)]}
+                </Text>
+                <ThemedText className="text-xl font-gaegu text-gray-400 ml-2">
+                  {selectedYear}
+                </ThemedText>
+                <IconSymbol
+                  name="chevron.right"
+                  size={18}
+                  color="#3D3D3D"
+                  style={{
+                    transform: [{ rotate: "90deg" }],
+                    marginLeft: 4,
+                  }}
+                />
+              </View>
             </TouchableOpacity>
+
+            {/* Header Right Buttons */}
+            <View className="flex-row items-center space-x-2">
+              {/* Save Button (Edit Mode Only) */}
+              {mode === "edit" && (
+                <TouchableOpacity
+                  onPress={
+                    photos && photos.length > 0
+                      ? handleEditPhotos
+                      : handleSavePhotos
+                  }
+                  className="bg-blue-500 px-4 py-2 rounded-lg"
+                  activeOpacity={0.9}
+                  disabled={isSaving || selectedPhotos.length === 0}
+                  style={{
+                    opacity: isSaving || selectedPhotos.length === 0 ? 0.5 : 1,
+                  }}
+                >
+                  <Text className="text-white font-medium">
+                    {isSaving ? "저장 중..." : "저장"}
+                  </Text>
+                </TouchableOpacity>
+              )}
+
+              {/* Mode Toggle Button */}
+              <TouchableOpacity
+                onPress={handleModeToggle}
+                activeOpacity={0.9}
+                className={`p-[8px] rounded-full ${
+                  mode === "edit" ? "bg-key" : "bg-gray-100"
+                }`}
+              >
+                <IconSymbol
+                  name={mode === "edit" ? "xmark" : "pencil"}
+                  size={22}
+                  color={mode === "edit" ? "#fff" : "#3D3D3D"}
+                />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleSaveScreenshot}
+                activeOpacity={0.9}
+                className={`p-[8px] rounded-full bg-gray-100`}
+              >
+                <IconSymbol
+                  name="photo.on.rectangle"
+                  size={22}
+                  color="#3D3D3D"
+                />
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
+        </TouchableWithoutFeedback>
 
         {/* Main Content with Background */}
         <View
@@ -766,7 +786,7 @@ export default function ArchiveScreen() {
             >
               {/* Edit Mode Controls with Animation */}
               <Animated.View
-                className="relative mb-4 z-[10000]"
+                className="relative mb-4 z-[10000] mr-4 mt-2"
                 style={{
                   opacity: fadeAnim,
                   transform: [
@@ -841,8 +861,8 @@ export default function ArchiveScreen() {
                           key={index}
                           className="absolute"
                           style={{
-                            width: width,
-                            height: height,
+                            width: width || 160,
+                            height: height || 160,
                             left: photo.position.x,
                             top: photo.position.y,
                             zIndex: photo.zIndex,
@@ -874,12 +894,16 @@ export default function ArchiveScreen() {
                                       photo.scale,
                                   },
                                 ],
-                                width: width,
-                                height: height,
+                                width: width || 160,
+                                height: height || 160,
                                 borderWidth:
                                   isActive && mode === "edit" ? 1.5 : 0,
                                 borderColor: "#6C4E31",
                                 borderRadius: 8,
+                                shadowColor: "#000",
+                                shadowOffset: { width: 0, height: 2 },
+                                shadowOpacity: 0.25,
+                                shadowRadius: 3.84,
                               }}
                             >
                               {photo.filter && photo.filter !== "normal" ? (
