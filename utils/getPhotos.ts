@@ -1,5 +1,28 @@
 import * as ImagePicker from "expo-image-picker";
-import { Alert } from "react-native";
+import * as FileSystem from "expo-file-system";
+import { Alert, Image } from "react-native";
+
+export const saveImagePermanently = async (tempUri: string) => {
+  const fileName = tempUri.split("/").pop();
+  const newPath = `${FileSystem.documentDirectory}${fileName}`;
+
+  await FileSystem.copyAsync({
+    from: tempUri,
+    to: newPath,
+  });
+
+  return newPath; // 영구 저장 경로
+};
+
+export const getImageSize = (uri: string) => {
+  return new Promise<{ width: number; height: number }>((resolve, reject) => {
+    Image.getSize(
+      uri,
+      (width, height) => resolve({ width, height }),
+      (error) => reject(error)
+    );
+  });
+};
 
 export const pickMultipleImages = async () => {
   const { status } = await ImagePicker.getMediaLibraryPermissionsAsync();

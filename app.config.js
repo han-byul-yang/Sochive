@@ -8,6 +8,9 @@ module.exports = {
     scheme: "sochive",
     userInterfaceStyle: "automatic",
     ios: {
+      infoPlist: {
+        ITSAppUsesNonExemptEncryption: false,
+      },
       bundleIdentifier: "com.sochive.app",
       supportsTablet: true,
       usesAppleSignIn: true,
@@ -27,9 +30,17 @@ module.exports = {
       bundler: "metro",
       output: "static",
       favicon: "./assets/images/favicon.png",
+      redirectUri: "sochive://",
     },
     plugins: [
       "expo-router",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          iosUrlScheme:
+            "com.googleusercontent.apps.434276661706-48nvb462fal15k7g9keiajbpobefmc7t",
+        },
+      ],
       [
         "expo-splash-screen",
         // "expo-build-properties",

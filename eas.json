@@ -8,6 +8,10 @@
         "distribution": "internal",
         "buildType": "apk",
         "gradleCommand": ":app:assembleDebug"
+      },
+      "ios": {
+        "distribution": "internal",
+        "developmentClient": true
       }
     },
     "preview": {
