@@ -50,6 +50,9 @@ import MemoEditModal from "@/components/Modals/MemoEditModal";
 import { cloneDeep, isEqual } from "lodash";
 import { resizeByMaxDimension } from "@/utils/photoManipulation";
 import { captureRef } from "react-native-view-shot";
+import DrawingPalette from "@/components/DrawingPalette";
+import DrawingCanvas from "@/components/DrawingCanvas";
+import { Point } from "react-native-gesture-handler/lib/typescript/web/interfaces";
 
 export default function ArchiveScreen() {
   const [mode, setMode] = useState<"read" | "edit">("read");
@@ -72,6 +75,12 @@ export default function ArchiveScreen() {
   // 콜라주 영역 크기 참조
   const collageAreaRef = useRef<View>(null);
   const [collageAreaSize, setCollageAreaSize] = useState({
+    width: 0,
+    height: 0,
+  });
+  const [collageAreaBounds, setCollageAreaBounds] = useState({
+    x: 0,
+    y: 0,
     width: 0,
     height: 0,
   });
@@ -142,7 +151,6 @@ export default function ArchiveScreen() {
     initialRotation: 0,
     initialScale: 1,
   });
-
   useEffect(() => {
     if (resetPhotos) {
       setSelectedPhotos(photos?.[0]?.photos || []);
@@ -177,6 +185,9 @@ export default function ArchiveScreen() {
 
   const handleModeToggle = () => {
     setMode(mode === "edit" ? "read" : "edit");
+    if (mode === "edit") {
+      setShowActionSheet(false);
+    }
   };
 
   // 모드 전환 애니메이션
@@ -187,7 +198,6 @@ export default function ArchiveScreen() {
       useNativeDriver: true,
     }).start();
     if (newMode === "read") {
-      console.log("resetPhotos");
       setResetPhotos(true);
     }
 
@@ -498,7 +508,10 @@ export default function ArchiveScreen() {
   };
 
   // 자른 이미지 저장 핸들러 수정
-  const handleSaveCroppedImage = (croppedImageUri: string) => {
+  const handleSaveCroppedImage = (
+    croppedImageUri: string,
+    touchPoints: Point[]
+  ) => {
     if (activePhotoIndex !== null) {
       // 크롭된 이미지의 크기 가져오기
       Image.getSize(croppedImageUri, (width, height) => {
@@ -509,6 +522,7 @@ export default function ArchiveScreen() {
           // 크롭된 이미지의 실제 크기 저장
           width: width,
           height: height,
+          touchPoints: touchPoints,
         };
         setSelectedPhotos(updatedPhotos);
         setOriginalUri(false);
@@ -588,6 +602,7 @@ export default function ArchiveScreen() {
       console.error("콜라주 저장 오류:", error);
       Alert.alert("저장 실패", "콜라주 저장 중 오류가 발생했습니다.");
     } finally {
+      handleModeToggle();
       setIsSaving(false);
     }
   };
@@ -607,6 +622,7 @@ export default function ArchiveScreen() {
       console.error(error);
       Alert.alert("수정 실패", "콜라주 수정 중 오류가 발생했습니다.");
     } finally {
+      handleModeToggle();
       setIsSaving(false);
     }
   };
@@ -661,6 +677,48 @@ export default function ArchiveScreen() {
 
   const handleSaveScreenshot = () => {
     saveScreenshot(mainContentRef);
+  };
+
+  // 그리기 관련 상태 추가
+  const [showDrawingPalette, setShowDrawingPalette] = useState(false);
+  const [isDrawingMode, setIsDrawingMode] = useState(false);
+  const [drawingPaletteAnim] = useState(new Animated.Value(0));
+  const [penColor, setPenColor] = useState("#7ED957");
+  const [penSize, setPenSize] = useState(33);
+  const [penOpacity, setPenOpacity] = useState(1);
+  const [penType, setPenType] = useState("normal");
+
+  // 그리기 모드 토글 함수
+  const toggleDrawingPalette = (show: boolean) => {
+    console.log("Toggling drawing palette:", show); // 디버깅을 위한 로그 추가
+    setShowDrawingPalette(show);
+    Animated.timing(drawingPaletteAnim, {
+      toValue: show ? 1 : 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  // 확인 버튼 핸들러
+  const handleDrawingConfirm = () => {
+    toggleDrawingPalette(false);
+    setIsDrawingMode(true); // 캔버스 활성화
+  };
+
+  // 그리기 완료 핸들러
+  const handleDrawingComplete = (paths: any[]) => {
+    console.log("Drawing completed with paths:", paths);
+    setIsDrawingMode(false); // 그리기 모드 비활성화
+  };
+
+  const handleOpenPencilMode = () => {
+    console.log("Opening pencil mode"); // 디버깅을 위한 로그 추가
+    setShowDrawingPalette(true);
+    Animated.timing(drawingPaletteAnim, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
   };
 
   return (
@@ -759,6 +817,21 @@ export default function ArchiveScreen() {
                   color="#3D3D3D"
                 />
               </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handleOpenPencilMode}
+                activeOpacity={0.9}
+                className={`p-[8px] rounded-full bg-gray-100`}
+                style={{
+                  elevation: 5,
+                  zIndex: 10001, // 다른 요소들보다 위에 표시되도록 zIndex 설정
+                }}
+              >
+                <IconSymbol
+                  name="pencil.and.ellipsis.rectangle"
+                  size={22}
+                  color="#3D3D3D"
+                />
+              </TouchableOpacity>
             </View>
           </View>
         </TouchableWithoutFeedback>
@@ -816,9 +889,21 @@ export default function ArchiveScreen() {
                   />
                 </TouchableOpacity>
 
+                {/* Pencil Button - 새로 추가 */}
+                <TouchableOpacity
+                  className="absolute right-24 bg-gray-100 p-[8px] rounded-full"
+                  activeOpacity={0.9}
+                  onPress={handleOpenPencilMode}
+                  style={{
+                    elevation: 5, // Android에서 z-index 효과를 위해 추가
+                  }}
+                >
+                  <IconSymbol name="pencil" size={24} color="#3D3D3D" />
+                </TouchableOpacity>
+
                 {/* Camera Button */}
                 <TouchableOpacity
-                  className="absolute right-0 bg-key p-[8px] rounded-full"
+                  className="absolute right-0 bg-blue-500 p-[8px] rounded-full"
                   activeOpacity={0.9}
                   onPress={handlePickImages}
                   style={{
@@ -832,19 +917,46 @@ export default function ArchiveScreen() {
               {/* Collage Area */}
               <View
                 ref={collageAreaRef}
-                className={`bg-white/90 rounded-2xl  ${
+                className={`bg-white/90 rounded-2xl relative ${
                   selectedPhotos.length > 0 ? "bg-transparent" : "bg-white/80"
                 }`}
                 style={{
                   height: 200,
                   zIndex: 1000,
-                  elevation: 5, // Android에서 z-index 효과를 위해 추가
+                  elevation: 5,
                 }}
                 onLayout={(event) => {
-                  const { width, height } = event.nativeEvent.layout;
+                  const { width, height, x, y } = event.nativeEvent.layout;
                   setCollageAreaSize({ width, height });
+
+                  // 콜라주 영역의 절대 위치 측정
+                  if (collageAreaRef.current) {
+                    collageAreaRef.current.measure(
+                      (fx, fy, width, height, px, py) => {
+                        setCollageAreaBounds({
+                          x: px,
+                          y: py,
+                          width,
+                          height,
+                        });
+                      }
+                    );
+                  }
                 }}
               >
+                {/* DrawingCanvas 컴포넌트 추가 */}
+                {isDrawingMode && (
+                  <DrawingCanvas
+                    visible={isDrawingMode}
+                    penColor={penColor}
+                    penSize={penSize}
+                    penOpacity={penOpacity}
+                    penType={penType}
+                    onDrawingComplete={handleDrawingComplete}
+                    collageAreaBounds={collageAreaBounds}
+                  />
+                )}
+
                 {selectedPhotos.length > 0 ? (
                   <View className="w-full h-full">
                     {selectedPhotos.map((photo, index) => {
@@ -870,7 +982,7 @@ export default function ArchiveScreen() {
                         >
                           <TouchableOpacity
                             activeOpacity={0.9}
-                            onPress={() => handlePhotoPress(index)}
+                            onPressOut={() => handlePhotoPress(index)}
                           >
                             <Animated.View
                               {...(mode === "edit"
@@ -897,12 +1009,14 @@ export default function ArchiveScreen() {
                                 width: width || 160,
                                 height: height || 160,
                                 borderWidth:
-                                  isActive && mode === "edit" ? 1.5 : 0,
+                                  isActive && mode === "edit" && showActionSheet
+                                    ? 1.5
+                                    : 0,
                                 borderColor: "#6C4E31",
                                 borderRadius: 8,
                                 shadowColor: "#000",
                                 shadowOffset: { width: 0, height: 2 },
-                                shadowOpacity: 0.25,
+                                shadowOpacity: 0.8,
                                 shadowRadius: 3.84,
                               }}
                             >
@@ -974,7 +1088,7 @@ export default function ArchiveScreen() {
                           </TouchableOpacity>
 
                           {/* 크기 조절 및 회전 핸들 컴포넌트 - 편집 모드일 때만 표시 */}
-                          {mode === "edit" && (
+                          {mode === "edit" && showActionSheet && (
                             <ResizeRotateHandle
                               isActive={isActive}
                               photoIndex={index}
@@ -1074,6 +1188,18 @@ export default function ArchiveScreen() {
           setMemoText={setMemoText}
           handleSaveMemo={handleSaveMemo}
         />
+
+        {/* DrawingPalette 컴포넌트 추가 */}
+        {/* <DrawingPalette
+          visible={showDrawingPalette}
+          paletteAnim={drawingPaletteAnim}
+          onClose={() => toggleDrawingPalette(false)}
+          onColorChange={setPenColor}
+          onSizeChange={setPenSize}
+          onOpacityChange={setPenOpacity}
+          onConfirm={handleDrawingConfirm}
+          onPenTypeChange={setPenType}
+        /> */}
       </View>
     </View>
   );

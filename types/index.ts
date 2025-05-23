@@ -1,8 +1,12 @@
 import { FieldValue, Timestamp } from "firebase/firestore";
+import { Point } from "react-native-gesture-handler/lib/typescript/web/interfaces";
 
-export type Photo = {
-  originalUri: string;
+export interface Photo {
   uri: string;
+  originalUri?: string;
+  width: number;
+  height: number;
+  touchPoints?: Point[];
   position: {
     x: number;
     y: number;
@@ -12,9 +16,13 @@ export type Photo = {
   scale: number;
   filter?: string;
   memo?: string;
-  width?: number;
-  height?: number;
-};
+  cropPath?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+}
 
 export type PhotoData = {
   photos: Photo[];
