@@ -15,6 +15,7 @@ import {
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { IconSymbol } from "@/components/ui/IconSymbol";
+import WheelColorPicker from "react-native-wheel-color-picker";
 
 interface DrawingModalProps {
   screenshotUri: string | undefined;
@@ -223,6 +224,47 @@ function PenSettingsModal({
   );
 }
 
+interface ColorPickerModalProps {
+  visible: boolean;
+  color: string;
+  onColorChange: (color: string) => void;
+  onClose: () => void;
+}
+
+function ColorPickerModal({
+  visible,
+  color,
+  onColorChange,
+  onClose,
+}: ColorPickerModalProps) {
+  if (!visible) return null;
+
+  return (
+    <TouchableWithoutFeedback onPress={() => {}}>
+      <View className="absolute z-10 bottom-28 left-0 right-0 bg-black/30">
+        <View className="bg-[#333333] rounded-t-2xl p-6">
+          <View className="flex-row items-center justify-between mb-6">
+            <Text className="text-white text-lg font-medium">색상</Text>
+            <TouchableOpacity onPress={onClose}>
+              <Text className="text-blue-400 font-medium">완료</Text>
+            </TouchableOpacity>
+          </View>
+          <View className="">
+            <WheelColorPicker
+              color={color}
+              onColorChange={onColorChange}
+              thumbSize={30}
+              sliderSize={30}
+              gapSize={20}
+              autoResetSlider
+            />
+          </View>
+        </View>
+      </View>
+    </TouchableWithoutFeedback>
+  );
+}
+
 export default function DrawingModal({
   screenshotUri,
   visible,
@@ -232,6 +274,7 @@ export default function DrawingModal({
   const [selectedTool, setSelectedTool] = useState("pencil");
   const [selectedColor, setSelectedColor] = useState("#000000");
   const [showPenSettings, setShowPenSettings] = useState(false);
+  const [showColorPicker, setShowColorPicker] = useState(false);
   const [penSize, setPenSize] = useState(10);
   const [penOpacity, setPenOpacity] = useState(1);
 
@@ -240,9 +283,14 @@ export default function DrawingModal({
     setShowPenSettings(true);
   };
 
+  const handleCloseModals = () => {
+    setShowPenSettings(false);
+    setShowColorPicker(false);
+  };
+
   return (
     <Modal visible={visible} animationType="slide" statusBarTranslucent>
-      <TouchableWithoutFeedback onPress={() => setShowPenSettings(false)}>
+      <TouchableWithoutFeedback onPress={handleCloseModals}>
         <SafeAreaView className="flex-1 bg-black">
           {/* Header */}
           <View className="flex-row items-center justify-between px-4 py-3">
@@ -270,6 +318,14 @@ export default function DrawingModal({
             opacity={penOpacity}
             onSizeChange={setPenSize}
             onOpacityChange={setPenOpacity}
+          />
+
+          {/* Color Picker Modal */}
+          <ColorPickerModal
+            visible={showColorPicker}
+            color={selectedColor}
+            onColorChange={setSelectedColor}
+            onClose={() => setShowColorPicker(false)}
           />
 
           {/* Bottom Toolbar */}
@@ -319,14 +375,10 @@ export default function DrawingModal({
               ))}
             </ScrollView>
 
-            {/* Color Picker */}
+            {/* Color Picker Button */}
             <View className="ml-4">
               <TouchableOpacity
-                onPress={() => {
-                  const nextColorIndex =
-                    (COLORS.indexOf(selectedColor) + 1) % COLORS.length;
-                  setSelectedColor(COLORS[nextColorIndex]);
-                }}
+                onPress={() => setShowColorPicker(!showColorPicker)}
                 className="w-12 h-12 rounded-full border-2 border-white p-1"
               >
                 <View
