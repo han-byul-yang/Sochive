@@ -17,7 +17,7 @@ interface FilterSelectsProps {
   selectedFilter: string | null;
   setActiveCategory: (category: string) => void;
   toggleFilterPicker: (show: boolean) => void;
-  onApplyFilter: (filterId: string, filterValue: string) => void;
+  onApplyFilter: (filterId: string) => void;
 }
 
 export default function FilterSelects({
@@ -86,12 +86,12 @@ export default function FilterSelects({
           {FILTERS[activeCategory as keyof typeof FILTERS].map((filter) => (
             <TouchableOpacity
               key={filter.id}
-              onPress={() => onApplyFilter(filter.id, filter.value)}
+              onPress={() => onApplyFilter(filter.id)}
               className="w-[30%] mb-4 items-center"
             >
               <View
                 className={`w-20 h-20 rounded-lg overflow-hidden border-2 ${
-                  selectedFilter === filter.value
+                  selectedFilter === filter.id
                     ? "border-blue-500"
                     : "border-transparent"
                 }`}

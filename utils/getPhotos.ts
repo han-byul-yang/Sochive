@@ -96,3 +96,22 @@ export const saveScreenshot = async (viewRef: React.RefObject<View>) => {
     console.error("스크린샷 저장 실패:", error);
   }
 };
+
+export const getScreenshot = async (viewRef: React.RefObject<View>) => {
+  try {
+    const permission = await MediaLibrary.requestPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert("권한이 필요해요", "사진을 저장하려면 권한이 필요합니다.");
+      return;
+    }
+
+    const uri = await captureRef(viewRef, {
+      format: "png",
+      quality: 1,
+    });
+
+    return uri;
+  } catch (error) {
+    console.error("스크린샷 실패:", error);
+  }
+};

@@ -19,6 +19,7 @@ import { ThemedText } from "@/components/ThemedText";
 import BackgroundSelects from "@/components/BackgroundSelects";
 import {
   getImageSize,
+  getScreenshot,
   pickMultipleImages,
   saveImagePermanently,
   saveScreenshot,
@@ -46,6 +47,7 @@ import { captureRef } from "react-native-view-shot";
 import DrawingPalette from "@/components/DrawingPalette";
 import DrawingCanvas from "@/components/DrawingCanvas";
 import { Point } from "react-native-gesture-handler/lib/typescript/web/interfaces";
+import DrawingModal from "@/components/Modals/DrawingModal";
 
 export default function ArchiveScreen() {
   const [mode, setMode] = useState<"read" | "edit">("read");
@@ -625,6 +627,9 @@ export default function ArchiveScreen() {
   const [showMemoModal, setShowMemoModal] = useState(false);
   const [memoText, setMemoText] = useState("");
   const [editingMemoIndex, setEditingMemoIndex] = useState<number | null>(null);
+  const [screenshotUri, setScreenshotUri] = useState<string | undefined>(
+    undefined
+  );
 
   // 사진 모달 닫기 핸들러
   const handleClosePhotoModal = () => {
@@ -668,7 +673,7 @@ export default function ArchiveScreen() {
     setOriginalUri(true);
   };
 
-  const handleSaveScreenshot = () => {
+  const handleSaveScreenshot = async () => {
     saveScreenshot(mainContentRef);
   };
 
@@ -680,6 +685,7 @@ export default function ArchiveScreen() {
   const [penSize, setPenSize] = useState(33);
   const [penOpacity, setPenOpacity] = useState(1);
   const [penType, setPenType] = useState("normal");
+  const [isClickedPencil, setIsClickedPencil] = useState(false);
 
   // 그리기 모드 토글 함수
   const toggleDrawingPalette = (show: boolean) => {
@@ -704,15 +710,37 @@ export default function ArchiveScreen() {
     setIsDrawingMode(false); // 그리기 모드 비활성화
   };
 
-  const handleOpenPencilMode = () => {
-    console.log("Opening pencil mode"); // 디버깅을 위한 로그 추가
-    setShowDrawingPalette(true);
-    Animated.timing(drawingPaletteAnim, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
+  useEffect(() => {
+    const runScreenshot = async () => {
+      if (mode === "read" && isClickedPencil) {
+        try {
+          await new Promise((resolve) => setTimeout(resolve, 300));
+          const uri = await getScreenshot(mainContentRef);
+          setScreenshotUri(uri);
+        } catch (error) {
+          console.error(error);
+        } finally {
+          setIsClickedPencil(false);
+          setShowDrawingModal(true);
+        }
+      }
+    };
+
+    runScreenshot();
+  }, [mode]);
+
+  const handleOpenPencilMode = async () => {
+    setMode("read");
+    setIsClickedPencil(true);
   };
+
+  const handleSaveDrawing = () => {
+    // 그리기 저장 로직 구현
+    setShowDrawingModal(false);
+  };
+
+  // 상태 추가
+  const [showDrawingModal, setShowDrawingModal] = useState(false);
 
   return (
     <View className="flex-1 bg-white">
@@ -1133,7 +1161,7 @@ export default function ArchiveScreen() {
         />
 
         {/* DrawingPalette 컴포넌트 추가 */}
-        {/* <DrawingPalette
+        <DrawingPalette
           visible={showDrawingPalette}
           paletteAnim={drawingPaletteAnim}
           onClose={() => toggleDrawingPalette(false)}
@@ -1142,7 +1170,15 @@ export default function ArchiveScreen() {
           onOpacityChange={setPenOpacity}
           onConfirm={handleDrawingConfirm}
           onPenTypeChange={setPenType}
-        /> */}
+        />
+
+        {/* DrawingModal 추가 */}
+        <DrawingModal
+          screenshotUri={screenshotUri}
+          visible={showDrawingModal}
+          onClose={() => setShowDrawingModal(false)}
+          onSave={handleSaveDrawing}
+        />
       </View>
     </View>
   );
