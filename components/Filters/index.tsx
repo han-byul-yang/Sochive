@@ -1,5 +1,5 @@
 import React from "react";
-import { Image, View, ViewStyle } from "react-native";
+import { BlendMode, Image, View, ViewStyle } from "react-native";
 import { Photo } from "@/types";
 import {
   Canvas,
@@ -10,9 +10,11 @@ import {
   Skia,
   useImage,
   SkPath,
+  Paint,
 } from "@shopify/react-native-skia";
 import { PhoneAuthProvider } from "firebase/auth/react-native";
 import { resizeByMaxDimension } from "@/utils/photoManipulation";
+import { filterStyles } from "@/utils/getFilterStyles";
 
 interface FilterProps {
   photo: Photo;
@@ -47,7 +49,7 @@ const FILTER_MATRICES = {
 const getFilterStyle = (filterType: string) => {
   switch (filterType) {
     case "grayscale":
-      return { opacity: 0.7, tintColor: "#808080" };
+      return { opacity: 0.7, tintColor: "#FFC0CB" };
     case "sepia":
       return { opacity: 0.8, tintColor: "#704214" };
     case "highteen":
@@ -64,19 +66,18 @@ const getFilterStyle = (filterType: string) => {
 };
 
 // 기본 필터 컴포넌트
-const FilteredImage = ({
+export default function FilteredImage({
   photo,
   filterType,
 }: {
   photo: Photo;
   filterType: string;
-}) => {
+}) {
   // 이미지 크기 계산
   const { width, height } = photo;
   const aspectRatio = width / height;
   const containerWidth = width;
   const containerHeight = height;
-
   // 크롭 정보가 있는 경우 스타일 계산
   const cropStyle = photo.cropPath
     ? {
@@ -144,10 +145,39 @@ const FilteredImage = ({
           >
             <Path
               path={clipPath as SkPath}
-              color="red"
+              color={
+                filterStyles[filterType as keyof typeof filterStyles]?.colors[0]
+                  .hex
+              }
               style="fill"
-              opacity={1}
+              blendMode={
+                filterStyles[filterType as keyof typeof filterStyles]
+                  ?.blendMode as any
+              }
+              opacity={
+                filterStyles[filterType as keyof typeof filterStyles]?.colors[0]
+                  .opacity
+              }
             />
+            {filterStyles[filterType as keyof typeof filterStyles].colors
+              .length > 1 && (
+              <Path
+                path={clipPath as SkPath}
+                color={
+                  filterStyles[filterType as keyof typeof filterStyles]
+                    .colors[1].hex
+                }
+                style="fill"
+                blendMode={
+                  filterStyles[filterType as keyof typeof filterStyles]
+                    .blendMode as any
+                }
+                opacity={
+                  filterStyles[filterType as keyof typeof filterStyles]
+                    .colors[1].opacity
+                }
+              />
+            )}
           </Canvas>
           <View className="absolute top-0 left-0 w-full h-full z-[-10]">
             <Image
@@ -158,43 +188,25 @@ const FilteredImage = ({
           </View>
         </View>
       ) : (
-        <View
-          className="relative"
-          style={{ width: photo.width, height: photo.height }}
-        >
+        <View className="relative" style={{ width: "100%", height: "100%" }}>
           <Image
             source={{ uri: photo.uri }}
             style={{ width: "100%", height: "100%" }}
             resizeMode="contain"
           />
-          <View className="absolute top-0 left-0 w-full h-full bg-black opacity-50"></View>
+          <View
+            className="absolute top-0 left-0 w-full h-full"
+            style={{
+              backgroundColor:
+                filterStyles[filterType as keyof typeof filterStyles]?.colors[0]
+                  .hex,
+              opacity:
+                filterStyles[filterType as keyof typeof filterStyles]?.colors[0]
+                  .opacity,
+            }}
+          ></View>
         </View>
       )}
     </>
   );
-};
-
-// 각 필터 컴포넌트 정의
-export const GrayScaleFilter = ({ photo }: FilterProps) => (
-  <FilteredImage photo={photo} filterType="grayscale" />
-);
-
-export const SepiaFilter = ({ photo }: FilterProps) => (
-  <FilteredImage photo={photo} filterType="sepia" />
-);
-
-export const HighTeenFilter = ({ photo }: FilterProps) => (
-  <FilteredImage photo={photo} filterType="highteen" />
-);
-
-export const OldFilmFilter = ({ photo }: FilterProps) => (
-  <FilteredImage photo={photo} filterType="oldfilm" />
-);
-
-export const BrightnessFilter = ({ photo }: FilterProps) => (
-  <FilteredImage photo={photo} filterType="brightness" />
-);
-
-export const ContrastFilter = ({ photo }: FilterProps) => (
-  <FilteredImage photo={photo} filterType="contrast" />
-);
+}

@@ -29,14 +29,7 @@ import ResizeRotateHandle from "@/components/ResizeRotateHandle";
 import PhotoActionSheet from "@/components/PhotoActionSheet";
 import CropPhotoModal from "@/components/Modals/CropPhotoModal";
 import FilterSelects from "@/components/FilterSelects";
-import {
-  BrightnessFilter,
-  ContrastFilter,
-  GrayScaleFilter,
-  HighTeenFilter,
-  OldFilmFilter,
-  SepiaFilter,
-} from "@/components/Filters";
+import FilteredImage from "@/components/Filters";
 import useAuth from "@/contexts/AuthContext";
 import { serverTimestamp } from "firebase/firestore";
 import { Photo } from "@/types";
@@ -555,7 +548,7 @@ export default function ArchiveScreen() {
   };
 
   // 필터 적용 함수 수정
-  const applyFilter = (filterId: string, filterValue: string) => {
+  const applyFilter = (filterId: string) => {
     if (activePhotoIndex === null) return;
     try {
       // 선택된 사진에 필터 적용
@@ -565,7 +558,7 @@ export default function ArchiveScreen() {
         filter: filterId, // 필터 ID 저장
       };
       setSelectedPhotos(updatedPhotos);
-      setSelectedFilter(filterValue);
+      setSelectedFilter(filterId);
     } catch (error) {
       console.error("필터 적용 오류:", error);
       // 오류 발생 시 기본 상태로 복원
@@ -1020,62 +1013,12 @@ export default function ArchiveScreen() {
                                 shadowRadius: 3.84,
                               }}
                             >
-                              {photo.filter && photo.filter !== "normal" ? (
+                              {photo.filter ? (
                                 <View style={{ width: "100%", height: "100%" }}>
-                                  {(() => {
-                                    try {
-                                      // 필터 ID에 따라 적절한 필터 컴포넌트 반환
-                                      switch (photo.filter) {
-                                        case "grayscale":
-                                          return (
-                                            <GrayScaleFilter photo={photo} />
-                                          );
-                                        case "sepia":
-                                          return <SepiaFilter photo={photo} />;
-                                        case "oldfilm":
-                                          return (
-                                            <OldFilmFilter photo={photo} />
-                                          );
-                                        case "brightness":
-                                          return (
-                                            <BrightnessFilter photo={photo} />
-                                          );
-                                        case "contrast":
-                                          return (
-                                            <ContrastFilter photo={photo} />
-                                          );
-                                        case "highteen":
-                                          return (
-                                            <HighTeenFilter photo={photo} />
-                                          );
-                                        // 다른 필터들도 여기에 추가
-                                        default:
-                                          return (
-                                            <Image
-                                              source={{ uri: photo.uri }}
-                                              style={{
-                                                width: "100%",
-                                                height: "100%",
-                                              }}
-                                              resizeMode="contain"
-                                            />
-                                          );
-                                      }
-                                    } catch (error) {
-                                      console.error("필터 렌더링 오류:", error);
-                                      // 오류 발생 시 기본 이미지 표시
-                                      return (
-                                        <Image
-                                          source={{ uri: photo.uri }}
-                                          style={{
-                                            width: "100%",
-                                            height: "100%",
-                                          }}
-                                          resizeMode="contain"
-                                        />
-                                      );
-                                    }
-                                  })()}
+                                  <FilteredImage
+                                    photo={photo}
+                                    filterType={photo.filter}
+                                  />
                                 </View>
                               ) : (
                                 <Image
