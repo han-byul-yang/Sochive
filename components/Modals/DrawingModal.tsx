@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect, Fragment } from "react";
 import {
   View,
   Image,
@@ -16,32 +16,56 @@ import {
 import { MaterialIcons } from "@expo/vector-icons";
 import { IconSymbol } from "@/components/ui/IconSymbol";
 import WheelColorPicker from "react-native-wheel-color-picker";
+import {
+  Canvas,
+  Path,
+  SkPath,
+  useCanvasRef,
+  Skia,
+  BlurMask,
+  Circle,
+  PathDef,
+  BlurStyle,
+  PaintStyle,
+  Group,
+} from "@shopify/react-native-skia";
+import {
+  generateSprayDots,
+  jitterPoint,
+  makeAngleBasedPath,
+  makeDotLinePoints,
+  makeDoubleLinePath,
+  makeOutlinePath,
+  makeSketchPath,
+  makeSmokePath,
+  makeWavePath,
+  penStyles,
+} from "@/utils/penStyles";
 
-interface DrawingModalProps {
-  screenshotUri: string | undefined;
-  visible: boolean;
-  onClose: () => void;
-  onSave: () => void;
-}
+type PenTipStyle = "round" | "square" | "butt";
 
 const TOOLS = [
-  { id: "pencil", icon: "edit", label: "연필", width: 2 },
-  { id: "brush", icon: "brush", label: "브러시", width: 4 },
-  { id: "marker", icon: "create", label: "마커", width: 6 },
-  { id: "highlighter", icon: "highlight", label: "형광펜", width: 8 },
-  { id: "pattern", icon: "grain", label: "패턴", width: 4 },
-  { id: "eraser", icon: "auto-fix-high", label: "지우개", width: 20 },
+  { id: "zigzag", icon: "edit", label: "지그재그", width: 2 },
+  { id: "smokeNormal", icon: "highlight", label: "연기", width: 8 },
+  { id: "smokeSolid", icon: "grain", label: "연기 굵게", width: 4 },
+  { id: "smokeInner", icon: "grain", label: "연기 안쪽", width: 4 },
+  { id: "smokeOuter", icon: "grain", label: "연기 바깥쪽", width: 4 },
+  { id: "wave", icon: "grain", label: "파도", width: 4 },
+  { id: "doubleLine", icon: "grain", label: "두줄", width: 4 },
+  { id: "outlineWhite", icon: "grain", label: "흰 테두리", width: 4 },
+  { id: "outlineColorThin", icon: "grain", label: "얇은 색 테두리", width: 4 },
+  { id: "outlineColorThick", icon: "grain", label: "굵은 색 테두리", width: 4 },
 ];
 
 const COLORS = [
-  "#000000", // 검정
-  "#FF69B4", // 핑크
-  "#4169E1", // 파랑
-  "#FFD700", // 노랑
-  "#FF6347", // 주황
-  "#9370DB", // 보라
-  "#20B2AA", // 청록
-  "#FF4500", // 빨강
+  "#000000",
+  "#FF69B4",
+  "#4169E1",
+  "#FFD700",
+  "#FF6347",
+  "#9370DB",
+  "#20B2AA",
+  "#FF4500",
 ];
 
 const SIZES = [
@@ -51,20 +75,42 @@ const SIZES = [
   { id: "lg", size: 8, label: "매우 굵게" },
 ];
 
+const PEN_TIP_STYLES = [
+  { id: "round" as PenTipStyle, label: "둥근 끝" },
+  { id: "square" as PenTipStyle, label: "각진 끝" },
+  { id: "butt" as PenTipStyle, label: "평평한 끝" },
+];
+
+interface DrawingModalProps {
+  screenshotUri: string | undefined;
+  visible: boolean;
+  onClose: () => void;
+  onSave: () => void;
+}
+
 interface PenSettingsModalProps {
   visible: boolean;
   size: number;
   opacity: number;
+  penTipStyle: PenTipStyle;
   onSizeChange: (size: number) => void;
   onOpacityChange: (opacity: number) => void;
+  onPenTipStyleChange: (style: PenTipStyle) => void;
+}
+
+interface Point {
+  x: number;
+  y: number;
 }
 
 function PenSettingsModal({
   visible,
   size,
   opacity,
+  penTipStyle,
   onSizeChange,
   onOpacityChange,
+  onPenTipStyleChange,
 }: PenSettingsModalProps) {
   if (!visible) return null;
 
@@ -219,6 +265,30 @@ function PenSettingsModal({
             <MaterialIcons name="opacity" size={20} color="#666" />
           </View>
         </View>
+
+        {/* Pen Tip Style */}
+        <View className="mt-4">
+          <Text className="text-white text-sm mb-2">펜 끝 모양</Text>
+          <View className="flex-row justify-between">
+            {PEN_TIP_STYLES.map((style) => (
+              <TouchableOpacity
+                key={style.id}
+                onPress={() => onPenTipStyleChange(style.id)}
+                className={`flex-1 mx-1 py-2 rounded-lg items-center ${
+                  penTipStyle === style.id ? "bg-blue-500" : "bg-gray-700"
+                }`}
+              >
+                <Text
+                  className={`text-sm ${
+                    penTipStyle === style.id ? "text-white" : "text-gray-300"
+                  }`}
+                >
+                  {style.label}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
       </View>
     </TouchableWithoutFeedback>
   );
@@ -271,16 +341,107 @@ export default function DrawingModal({
   onClose,
   onSave,
 }: DrawingModalProps) {
-  const [selectedTool, setSelectedTool] = useState("pencil");
+  const [selectedTool, setSelectedTool] = useState("zigzag");
   const [selectedColor, setSelectedColor] = useState("#000000");
   const [showPenSettings, setShowPenSettings] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [penSize, setPenSize] = useState(10);
   const [penOpacity, setPenOpacity] = useState(1);
+  const [penTipStyle, setPenTipStyle] = useState<PenTipStyle>("round");
+  const [dots, setDots] = useState<Point[]>([]);
+  const [paths, setPaths] = useState<
+    {
+      path: SkPath | { path1: SkPath; path2: SkPath };
+      color: string;
+      opacity: number;
+      strokeWidth: number;
+      penTipStyle: PenTipStyle;
+      selectedTool: string;
+    }[]
+  >([]);
+  const [currentPath, setCurrentPath] = useState<Point[]>([]);
+  const canvasRef = useCanvasRef();
+  const { width, height } = Dimensions.get("window");
+
+  const getStrokeWidth = () => {
+    switch (selectedTool) {
+      case "zigzag":
+        return penSize * 0.5;
+      case "spray":
+        return penSize;
+      case "dot":
+        return penSize * 1.5;
+      case "smokeNormal":
+        return penSize * 2;
+      case "smokeSolid":
+        return penSize * 2;
+      case "smokeInner":
+        return penSize * 2;
+      case "smokeOuter":
+        return penSize * 2;
+      case "wave":
+        return penSize;
+      case "doubleLine":
+        return penSize;
+      case "outlineWhite":
+        return penSize;
+      case "outlineColorThin":
+        return penSize;
+      case "outlineColorThick":
+        return penSize;
+      default:
+        return penSize;
+    }
+  };
+
+  const drawingPanResponder = PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: () => true,
+    onPanResponderGrant: (evt) => {
+      const { locationX, locationY } = evt.nativeEvent;
+      setCurrentPath([{ x: locationX, y: locationY }]);
+    },
+    onPanResponderMove: (evt) => {
+      const { locationX, locationY } = evt.nativeEvent;
+      console.log("locationX", locationX);
+      setCurrentPath((prev) => [...prev, { x: locationX, y: locationY }]);
+    },
+    onPanResponderRelease: () => {
+      if (currentPath.length > 1) {
+        //const path = makeSmokePath(currentPath);
+        const outlinePath = makeOutlinePath(currentPath);
+        const doubleLinePath = makeDoubleLinePath(currentPath);
+        const wavePath = makeWavePath(currentPath);
+        const path = penStyles[selectedTool as keyof typeof penStyles].style(currentPath);
+        setPaths((prev) => [
+          ...prev,
+          {
+            selectedTool: selectedTool,
+            path: selectedTool === "doubleLine" ? doubleLinePath : path,
+            color: selectedColor, 
+            opacity: penOpacity,
+            penTipStyle: penTipStyle,
+            strokeWidth: getStrokeWidth(),
+          },
+        ]);
+        setCurrentPath([]);
+      }
+    },
+  });
+
+  const sprayPanResponder = PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: () => true,
+    onPanResponderMove: (evt) => {
+      const { locationX, locationY } = evt.nativeEvent;
+      const spray = makeDotLinePoints(currentPath);
+      setDots((prev) => [...prev, ...spray]);
+    },
+  });
 
   const handleToolSelect = (toolId: string) => {
     setSelectedTool(toolId);
-    setShowPenSettings(true);
+    setShowPenSettings((prevState) => !prevState);
   };
 
   const handleCloseModals = () => {
@@ -288,27 +449,148 @@ export default function DrawingModal({
     setShowColorPicker(false);
   };
 
+  console.log(penStyles[selectedTool as keyof typeof penStyles], selectedTool)
+
+
+  const handleUndo = () => {
+    setPaths((prev) => prev.slice(1));
+  };
+
   return (
     <Modal visible={visible} animationType="slide" statusBarTranslucent>
       <TouchableWithoutFeedback onPress={handleCloseModals}>
-        <SafeAreaView className="flex-1 bg-black">
+        <SafeAreaView className="flex-1 bg-[#B6CBBD]">
           {/* Header */}
           <View className="flex-row items-center justify-between px-4 py-3">
             <TouchableOpacity onPress={onClose}>
               <IconSymbol name="xmark" size={24} color="#fff" />
             </TouchableOpacity>
             <Text className="text-white text-lg font-medium">그리기</Text>
-            <TouchableOpacity onPress={onSave}>
-              <Text className="text-blue-400 font-medium">완료</Text>
-            </TouchableOpacity>
+            <View className="flex-row items-center space-x-4">
+              <TouchableWithoutFeedback onPress={() => {}}>
+                <TouchableOpacity
+                  onPress={handleUndo}
+                  disabled={paths.length === 0}
+                >
+                  <MaterialIcons
+                    name="undo"
+                    size={24}
+                    color={paths.length > 0 ? "#3b82f6" : "#666666"}
+                  />
+                </TouchableOpacity>
+              </TouchableWithoutFeedback>
+              <TouchableOpacity onPress={onSave}>
+                <Text className="text-blue-400 font-medium">완료</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Drawing Area */}
-          <View className="flex-1 bg-white rounded-2xl mb-4">
+          <View className="flex-1 relative bg-white rounded-2xl">
             <Image
               source={{ uri: screenshotUri }}
-              className="flex-1 w-full h-full"
+              className="absolute inset-0 w-full h-full"
             />
+            <Canvas
+              ref={canvasRef}
+              style={{ flex: 1 }}
+              {...drawingPanResponder.panHandlers}
+            >
+                 {paths.map((path: any, index) => {
+                return (
+                <Group key={index}>
+                  {penStyles[path.selectedTool as keyof typeof penStyles].path === "blur" ?
+                    <>
+                    <BlurMask blur={penStyles[path.selectedTool as keyof typeof penStyles].blur} style={penStyles[path.selectedTool as keyof typeof penStyles].option}/>
+                  <Path
+                    path={path.selectedTool === "doubleLine" ? path.path.path1 as any : path.path}
+                    strokeWidth={penStyles[path.selectedTool as keyof typeof penStyles].path === "path2" ? path.strokeWidth * (penStyles[path.selectedTool as keyof typeof penStyles].width1) : path.strokeWidth}
+                    blendMode="src"
+                    color={penStyles[path.selectedTool as keyof typeof penStyles].path === "path2" ? (penStyles[path.selectedTool as keyof typeof penStyles].color1 === 'selectedColor' ? path.color : penStyles[path.selectedTool as keyof typeof penStyles].color1) : path.color}
+                    strokeJoin="round"
+                    strokeCap={path.penTipStyle}
+                    style="stroke"
+                    opacity={path.opacity}
+                    />
+                    </>
+                    :
+                    <Group>
+                    <Path
+                    path={path.selectedTool === "doubleLine" ? path.path.path1 as any : path.path}
+                    strokeWidth={penStyles[path.selectedTool as keyof typeof penStyles].path === "path2" ? path.strokeWidth * (penStyles[path.selectedTool as keyof typeof penStyles].width1) : path.strokeWidth}
+                    blendMode="src"
+                    color={penStyles[path.selectedTool as keyof typeof penStyles].path === "path2" ? (penStyles[path.selectedTool as keyof typeof penStyles].color1 === 'selectedColor' ? path.color : penStyles[path.selectedTool as keyof typeof penStyles].color1) : path.color}
+                    strokeJoin="round"
+                    strokeCap={path.penTipStyle}
+                    style="stroke"
+                    opacity={path.opacity}
+                  />
+                  </Group>
+              }
+              {penStyles[path.selectedTool as keyof typeof penStyles].path === "path2" &&
+              <Group>
+                  <Path
+                    path={path.selectedTool === "doubleLine" ? path.path.path2 as any : path.path}
+                    strokeWidth={penStyles[path.selectedTool as keyof typeof penStyles].path === "path2" ? path.strokeWidth * (penStyles[path.selectedTool as keyof typeof penStyles].width2) : path.strokeWidth}
+                    blendMode="src"
+                    strokeJoin="round"
+                    strokeCap={path.penTipStyle}
+                    color={penStyles[path.selectedTool as keyof typeof penStyles].path === "path2" ? (penStyles[path.selectedTool as keyof typeof penStyles].color2 === 'selectedColor' ? path.color : penStyles[path.selectedTool as keyof typeof penStyles].color2) : path.color}
+                    style="stroke"
+                    opacity={path.opacity}
+                  />
+                  </Group>
+              }
+                </Group>
+                )
+})}
+              {currentPath.length > 1 && (
+                penStyles[selectedTool as keyof typeof penStyles].path === "blur" ?
+                <Group>
+                <BlurMask blur={penStyles[selectedTool as keyof typeof penStyles].blur} style={penStyles[selectedTool as keyof typeof penStyles].option} />
+                <Path
+                  path={selectedTool === "doubleLine" ? makeDoubleLinePath(currentPath).path1 as PathDef : penStyles[selectedTool as keyof typeof penStyles].style(currentPath) as PathDef}
+                  strokeWidth={penStyles[selectedTool as keyof typeof penStyles].path === "path2" ? getStrokeWidth() * (penStyles[selectedTool as keyof typeof penStyles].width1) : getStrokeWidth()}
+                  color={penStyles[selectedTool as keyof typeof penStyles].path === "path2" ? (penStyles[selectedTool as keyof typeof penStyles].color1 === 'selectedColor' ? selectedColor : penStyles[selectedTool as keyof typeof penStyles].color1) : selectedColor}
+                  
+                  strokeJoin="round"
+                  strokeCap={penTipStyle}
+                  style="stroke"
+                  opacity={penOpacity}
+                  blendMode="src"
+                />
+                </Group>
+                :
+                <Group>
+                <Path
+                  path={selectedTool === "doubleLine" ? makeDoubleLinePath(currentPath).path1 as PathDef : penStyles[selectedTool as keyof typeof penStyles].style(currentPath) as PathDef}
+                  strokeWidth={penStyles[selectedTool as keyof typeof penStyles].path === "path2" ? getStrokeWidth() * (penStyles[selectedTool as keyof typeof penStyles].width1) : getStrokeWidth()}
+                  color={penStyles[selectedTool as keyof typeof penStyles].path === "path2" ? (penStyles[selectedTool as keyof typeof penStyles].color1 === 'selectedColor' ? selectedColor : penStyles[selectedTool as keyof typeof penStyles].color1) : selectedColor}
+                  
+                  strokeJoin="round"
+                  strokeCap={penTipStyle}
+                  style="stroke"
+                  opacity={penOpacity}
+                  blendMode="src"
+                />
+                </Group>
+                )}
+                {penStyles[selectedTool as keyof typeof penStyles].path === "path2" && 
+                <Group>
+                  <Path
+                    path={selectedTool === "doubleLine" ? makeDoubleLinePath(currentPath).path2 as PathDef : penStyles[selectedTool as keyof typeof penStyles].style(currentPath) as PathDef}
+                    strokeWidth={getStrokeWidth() * (penStyles[selectedTool as keyof typeof penStyles].width2)}
+                    color={penStyles[selectedTool as keyof typeof penStyles].path === "path2" ? (penStyles[selectedTool as keyof typeof penStyles].color2 === 'selectedColor' ? selectedColor : penStyles[selectedTool as keyof typeof penStyles].color2) : selectedColor}
+                  
+                    strokeJoin="round"
+                    strokeCap={penTipStyle}
+                    style="stroke"
+                    opacity={penOpacity}
+                    blendMode="src"
+                    />
+                  </Group>}
+           
+            </Canvas>
           </View>
 
           {/* Pen Settings Modal */}
@@ -316,8 +598,10 @@ export default function DrawingModal({
             visible={showPenSettings}
             size={penSize}
             opacity={penOpacity}
+            penTipStyle={penTipStyle}
             onSizeChange={setPenSize}
             onOpacityChange={setPenOpacity}
+            onPenTipStyleChange={setPenTipStyle}
           />
 
           {/* Color Picker Modal */}
@@ -329,7 +613,7 @@ export default function DrawingModal({
           />
 
           {/* Bottom Toolbar */}
-          <View className="h-20 bg-[#222222] flex-row items-center px-4">
+          <View className="h-20 bg-[#516d66] flex-row items-center px-4">
             {/* Tools */}
             <ScrollView
               horizontal
@@ -343,34 +627,25 @@ export default function DrawingModal({
                   className="items-center mr-6"
                 >
                   <View
-                    className={`h-12 px-3 rounded-full items-center justify-center flex-row space-x-2 ${
-                      selectedTool === tool.id ? "bg-blue-500" : "bg-gray-800"
+                    className={`py-3 px-3 rounded-md items-center justify-center flex-row space-x-2 ${
+                      selectedTool === tool.id ? "bg-slate-100" : "bg-[#1c1e1c]"
                     }`}
                   >
                     <MaterialIcons
                       name={tool.icon as any}
                       size={20}
-                      color={selectedTool === tool.id ? "#fff" : "#999"}
+                      color={selectedTool === tool.id ? "#1f2937" : "#999"}
                     />
                     <Text
-                      className={`text-sm ${
+                      className={`${
                         selectedTool === tool.id
-                          ? "text-white"
+                          ? "text-gray-800 font-medium"
                           : "text-gray-400"
                       }`}
                     >
                       {tool.label}
                     </Text>
                   </View>
-                  {/* Tool Width Indicator */}
-                  <View
-                    className="mt-1 bg-gray-400 rounded-full"
-                    style={{
-                      width: tool.width,
-                      height: tool.width,
-                      opacity: selectedTool === tool.id ? 1 : 0.5,
-                    }}
-                  />
                 </TouchableOpacity>
               ))}
             </ScrollView>
