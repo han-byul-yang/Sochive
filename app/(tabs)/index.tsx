@@ -50,6 +50,7 @@ import DrawingModal from "@/components/Modals/DrawingModal";
 import { useGetDrawings } from "@/hooks/useGetDrawings";
 import { Canvas } from "@shopify/react-native-skia";
 import DrawingCanvas from "@/components/Archive/DrawingCanvas";
+import { router } from "expo-router";
 
 export default function ArchiveScreen() {
   const [mode, setMode] = useState<"read" | "edit">("read");
@@ -497,7 +498,14 @@ export default function ArchiveScreen() {
     } else {
       // 읽기 모드일 때는 사진 모달만 표시
       setActivePhotoIndex(index);
-      setShowPhotoModal(true);
+      router.push({
+        pathname: "/(memo)/memo",
+        params: { 
+          selectedPhotoUri: selectedPhotos[index].originalUri,
+          selectedPhotoMemo: selectedPhotos[index]?.memo,
+        }
+      });
+      //setShowPhotoModal(true);
     }
   };
 
@@ -779,13 +787,11 @@ export default function ArchiveScreen() {
               activeOpacity={0.9}
               className="flex-row items-center"
             >
-              <View className="flex-row items-baseline">
+              <View className="flex-row items-center">
                 <ThemedText className="text-3xl font-gaegu text-key">
                   {getMonthName(selectedMonth)}
                 </ThemedText>
-                <Text className="text-xl">
-                  {MONTH_EMOJIS[getMonthName(selectedMonth)]}
-                </Text>
+                <Image source={{ uri: MONTH_EMOJIS[getMonthName(selectedMonth)] }} className="w-8 h-8" resizeMode="contain" />
                 <ThemedText className="text-xl font-gaegu text-gray-400 ml-2">
                   {selectedYear}
                 </ThemedText>
