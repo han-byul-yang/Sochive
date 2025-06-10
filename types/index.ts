@@ -1,3 +1,5 @@
+import { PenTipStyle } from "@/components/Modals/DrawingModal";
+import { SkPath } from "@shopify/react-native-skia";
 import { FieldValue, Timestamp } from "firebase/firestore";
 import { Point } from "react-native-gesture-handler/lib/typescript/web/interfaces";
 
@@ -39,4 +41,33 @@ export type PhotoDocData = {
   year: number;
   background: string | null;
   createdAt: Timestamp;
+};
+
+export type DrawingData = {
+  month: number;
+  year: number;
+  drawing: {
+    currentPath: Point[];
+    color: string;
+    opacity: number;
+    strokeWidth: number;
+    penTipStyle: PenTipStyle;
+    selectedTool: string;
+    isEraser: boolean;
+}[]
+};
+
+export type DrawingDocData = {
+  id: string;
+  month: number;
+  year: number;
+  drawing:  {
+    currentPath: Point[];
+    color: string;
+    opacity: number;
+    strokeWidth: number;
+    penTipStyle: PenTipStyle;
+    selectedTool: string;
+    isEraser: boolean;
+}[];
 };

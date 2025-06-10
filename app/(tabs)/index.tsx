@@ -45,9 +45,11 @@ import { cloneDeep, isEqual } from "lodash";
 import { resizeByMaxDimension } from "@/utils/photoManipulation";
 import { captureRef } from "react-native-view-shot";
 import DrawingPalette from "@/components/DrawingPalette";
-import DrawingCanvas from "@/components/DrawingCanvas";
 import { Point } from "react-native-gesture-handler/lib/typescript/web/interfaces";
 import DrawingModal from "@/components/Modals/DrawingModal";
+import { useGetDrawings } from "@/hooks/useGetDrawings";
+import { Canvas } from "@shopify/react-native-skia";
+import DrawingCanvas from "@/components/Archive/DrawingCanvas";
 
 export default function ArchiveScreen() {
   const [mode, setMode] = useState<"read" | "edit">("read");
@@ -98,6 +100,9 @@ export default function ArchiveScreen() {
     selectedMonth,
     selectedYear
   );
+  const { data: drawingsData } = useGetDrawings(selectedMonth, selectedYear);
+
+
   // 월 이름 가져오기 함수 추가
   const getMonthName = (month: number) => MONTHS[month - 1];
   const isFirstRender = useRef(true);
@@ -714,7 +719,7 @@ export default function ArchiveScreen() {
     const runScreenshot = async () => {
       if (mode === "read" && isClickedPencil) {
         try {
-          await new Promise((resolve) => setTimeout(resolve, 300));
+          await new Promise((resolve) => setTimeout(resolve, 500));
           const uri = await getScreenshot(mainContentRef);
           setScreenshotUri(uri);
         } catch (error) {
@@ -741,6 +746,12 @@ export default function ArchiveScreen() {
 
   // 상태 추가
   const [showDrawingModal, setShowDrawingModal] = useState(false);
+  const [showCanvas, setShowCanvas] = useState(true);
+
+  const handleCloseCanvas = () => {
+    console.log("close canvas");
+    setShowCanvas(false);
+  };
 
   return (
     <View className="flex-1 bg-white">
@@ -800,7 +811,7 @@ export default function ArchiveScreen() {
                       ? handleEditPhotos
                       : handleSavePhotos
                   }
-                  className="bg-blue-500 px-4 py-2 rounded-lg"
+                  className="bg-[#DA6C6C] px-4 py-2 rounded-lg"
                   activeOpacity={0.9}
                   disabled={isSaving || selectedPhotos.length === 0}
                   style={{
@@ -844,7 +855,7 @@ export default function ArchiveScreen() {
                 className={`p-[8px] rounded-full bg-gray-100`}
                 style={{
                   elevation: 5,
-                  zIndex: 10001, // 다른 요소들보다 위에 표시되도록 zIndex 설정
+                  zIndex: 10000, // 다른 요소들보다 위에 표시되도록 zIndex 설정
                 }}
               >
                 <IconSymbol
@@ -870,8 +881,8 @@ export default function ArchiveScreen() {
             source={
               selectedBackground ? { uri: selectedBackground } : undefined
             }
-            style={{ flex: 1 }}
-            imageStyle={{ opacity: 0.65 }}
+            className="flex-1 w-full h-full"
+            imageStyle={{ opacity: 0.7 }}
           >
             <TouchableOpacity
               activeOpacity={1}
@@ -880,7 +891,7 @@ export default function ArchiveScreen() {
             >
               {/* Edit Mode Controls with Animation */}
               <Animated.View
-                className="relative mb-4 z-[10000] mr-4 mt-2"
+                className="relative mb-4 z-[10001] mr-4 mt-2"
                 style={{
                   opacity: fadeAnim,
                   transform: [
@@ -924,16 +935,35 @@ export default function ArchiveScreen() {
 
                 {/* Camera Button */}
                 <TouchableOpacity
-                  className="absolute right-0 bg-blue-500 p-[8px] rounded-full"
+                  className="absolute right-0 bg-gray-100 p-[8px] rounded-full"
                   activeOpacity={0.9}
                   onPress={handlePickImages}
                   style={{
                     elevation: 5, // Android에서 z-index 효과를 위해 추가
                   }}
                 >
-                  <IconSymbol name="camera" size={24} color="#fff" />
+                  <IconSymbol name="camera" size={24} color="#3D3D3D" />
                 </TouchableOpacity>
               </Animated.View>
+
+                         {/* DrawingCanvas 컴포넌트 추가 */}
+           {drawingsData && drawingsData.length > 0 && !isClickedPencil && (
+            <>
+                  <View pointerEvents="none" className="flex-1 absolute top-0 left-0 right-0 bottom-0 z-[10000] bg-transparent">
+                  <Canvas style={{ flex: 1 }}>
+                   {
+                    drawingsData[0].drawing.map((drawing: any, index: number) => (
+                      <DrawingCanvas
+                        key={index}
+                        path={drawing}
+                        index={index}
+                      />
+                    ))
+                   }
+                  </Canvas>
+                  </View>
+                  </>
+                )}
 
               {/* Collage Area */}
               <View
@@ -965,19 +995,7 @@ export default function ArchiveScreen() {
                   }
                 }}
               >
-                {/* DrawingCanvas 컴포넌트 추가 */}
-                {isDrawingMode && (
-                  <DrawingCanvas
-                    visible={isDrawingMode}
-                    penColor={penColor}
-                    penSize={penSize}
-                    penOpacity={penOpacity}
-                    penType={penType}
-                    onDrawingComplete={handleDrawingComplete}
-                    collageAreaBounds={collageAreaBounds}
-                  />
-                )}
-
+             
                 {selectedPhotos.length > 0 ? (
                   <View className="w-full h-full">
                     {selectedPhotos.map((photo, index) => {
@@ -1174,6 +1192,8 @@ export default function ArchiveScreen() {
 
         {/* DrawingModal 추가 */}
         <DrawingModal
+          month={selectedMonth}
+          year={selectedYear}
           screenshotUri={screenshotUri}
           visible={showDrawingModal}
           onClose={() => setShowDrawingModal(false)}

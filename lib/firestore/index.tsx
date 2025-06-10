@@ -1,5 +1,5 @@
 import { db } from "@/lib/firebase";
-import { Photo, PhotoData } from "@/types";
+import { DrawingData, Photo, PhotoData } from "@/types";
 import {
   doc,
   getDoc,
@@ -19,7 +19,6 @@ import {
 
 // 사용자 생성 및 초기 폴더 설정
 export const createUserStore = async (userId: string, email: string) => {
-  console.log("createUserStore", userId, email);
   try {
     const userRef = doc(db, "Users", userId);
     const userDoc = await getDoc(userRef);
@@ -69,4 +68,35 @@ export const updatePhotoStore = async (
 ) => {
   const photoRef = doc(db, "Users", userId, "Photos", photoId);
   await updateDoc(photoRef, photoData);
+};
+
+export const createDrawingStore = async (
+  userId: string,
+  drawingData: DrawingData
+) => {
+  const drawingRef = collection(db, "Users", userId, "Drawings");
+  await addDoc(drawingRef, drawingData);
+};
+
+export const updateDrawingStore = async (
+  userId: string,
+  drawingData: DrawingData,
+  drawingId: string
+) => {
+  const drawingRef = doc(db, "Users", userId, "Drawings", drawingId);
+  await updateDoc(drawingRef, drawingData);
+};
+
+export const getDrawingStore = async (userId: string, month: number, year: number) => {
+  const drawingRef = collection(db, "Users", userId, "Drawings");
+  const q = query(
+    drawingRef,
+    where("month", "==", month),
+    where("year", "==", year)
+  );
+  const querySnapshot = await getDocs(q);
+  return querySnapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
 };

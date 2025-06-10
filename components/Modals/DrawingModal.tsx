@@ -41,8 +41,10 @@ import {
   makeWavePath,
   penStyles,
 } from "@/utils/penStyles";
+import { createDrawingStore } from "@/lib/firestore";
+import { useCreateDrawing, useGetDrawings, useUpdateDrawing } from "@/hooks/useGetDrawings";
 
-type PenTipStyle = "round" | "square" | "butt";
+export type PenTipStyle = "round" | "square" | "butt";
 
 const TOOLS = [
   { id: "zigzag", icon: "edit", label: "지그재그", width: 2 },
@@ -82,6 +84,8 @@ const PEN_TIP_STYLES = [
 ];
 
 interface DrawingModalProps {
+  month: number;
+  year: number;
   screenshotUri: string | undefined;
   visible: boolean;
   onClose: () => void;
@@ -336,6 +340,8 @@ function ColorPickerModal({
 }
 
 export default function DrawingModal({
+  month,
+  year,
   screenshotUri,
   visible,
   onClose,
@@ -348,20 +354,27 @@ export default function DrawingModal({
   const [penSize, setPenSize] = useState(10);
   const [penOpacity, setPenOpacity] = useState(1);
   const [penTipStyle, setPenTipStyle] = useState<PenTipStyle>("round");
+  const [isEraser, setIsEraser] = useState(false);
   const [dots, setDots] = useState<Point[]>([]);
   const [paths, setPaths] = useState<
     {
-      path: SkPath | { path1: SkPath; path2: SkPath };
+      //path: SkPath | { path1: SkPath; path2: SkPath };
+      currentPath: Point[];
       color: string;
       opacity: number;
       strokeWidth: number;
       penTipStyle: PenTipStyle;
       selectedTool: string;
+      isEraser: boolean;
     }[]
   >([]);
   const [currentPath, setCurrentPath] = useState<Point[]>([]);
   const canvasRef = useCanvasRef();
   const { width, height } = Dimensions.get("window");
+  const { mutate: createDrawingMutate } = useCreateDrawing(month, year);
+  const { mutate: updateDrawingMutate } = useUpdateDrawing(month, year);
+  const { data: drawingsPathData } = useGetDrawings(month, year);
+  const [isCreate, setIsCreate] = useState(false);
 
   const getStrokeWidth = () => {
     switch (selectedTool) {
@@ -403,7 +416,6 @@ export default function DrawingModal({
     },
     onPanResponderMove: (evt) => {
       const { locationX, locationY } = evt.nativeEvent;
-      console.log("locationX", locationX);
       setCurrentPath((prev) => [...prev, { x: locationX, y: locationY }]);
     },
     onPanResponderRelease: () => {
@@ -417,11 +429,13 @@ export default function DrawingModal({
           ...prev,
           {
             selectedTool: selectedTool,
-            path: selectedTool === "doubleLine" ? doubleLinePath : path,
+            //path: selectedTool === "doubleLine" ? doubleLinePath : path,
+            currentPath: currentPath,
             color: selectedColor, 
             opacity: penOpacity,
             penTipStyle: penTipStyle,
             strokeWidth: getStrokeWidth(),
+            isEraser: isEraser,
           },
         ]);
         setCurrentPath([]);
@@ -440,6 +454,7 @@ export default function DrawingModal({
   });
 
   const handleToolSelect = (toolId: string) => {
+    if (isEraser) return; // 지우개 모드에서는 도구 변경 불가
     setSelectedTool(toolId);
     setShowPenSettings((prevState) => !prevState);
   };
@@ -449,12 +464,43 @@ export default function DrawingModal({
     setShowColorPicker(false);
   };
 
-  console.log(penStyles[selectedTool as keyof typeof penStyles], selectedTool)
-
 
   const handleUndo = () => {
-    setPaths((prev) => prev.slice(1));
+    setPaths((prev) => prev.slice(0, -1));
   };
+
+  const handleSave = () => {
+    const drawingData = {
+      month: month,
+      year: year,
+      drawing: paths
+    };
+    try {
+      if (isCreate) {
+        createDrawingMutate(drawingData);
+    } else {
+      updateDrawingMutate({
+        drawingData: drawingData,
+          drawingId: drawingsPathData?.[0]?.id || "",
+        });
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setPaths([]);
+      setCurrentPath([]);
+      onClose();
+    }
+  };
+
+  useEffect(() => {
+    if (drawingsPathData && drawingsPathData?.length > 0) {
+      setPaths(drawingsPathData[0].drawing);
+      setIsCreate(false)
+    } else {
+      setIsCreate(true)
+    }
+  }, [drawingsPathData]);
 
   return (
     <Modal visible={visible} animationType="slide" statusBarTranslucent>
@@ -469,17 +515,29 @@ export default function DrawingModal({
             <View className="flex-row items-center space-x-4">
               <TouchableWithoutFeedback onPress={() => {}}>
                 <TouchableOpacity
+                  onPress={() => setIsEraser(!isEraser)}
+                  className={`p-1 rounded ${isEraser ? 'bg-red-500' : ''}`}
+                >
+                  <MaterialIcons
+                    name="cleaning-services"
+                    size={24}
+                    color={isEraser ? "#ffffff" : "#3b82f6"}
+                  />
+                </TouchableOpacity>
+              </TouchableWithoutFeedback>
+              <TouchableWithoutFeedback onPress={() => {}}>
+                <TouchableOpacity
                   onPress={handleUndo}
-                  disabled={paths.length === 0}
+                  disabled={paths?.length === 0}
                 >
                   <MaterialIcons
                     name="undo"
                     size={24}
-                    color={paths.length > 0 ? "#3b82f6" : "#666666"}
+                    color={paths?.length > 0 ? "#3b82f6" : "#666666"}
                   />
                 </TouchableOpacity>
               </TouchableWithoutFeedback>
-              <TouchableOpacity onPress={onSave}>
+              <TouchableOpacity onPress={handleSave}>
                 <Text className="text-blue-400 font-medium">완료</Text>
               </TouchableOpacity>
             </View>
@@ -487,6 +545,10 @@ export default function DrawingModal({
 
           {/* Drawing Area */}
           <View className="flex-1 relative bg-white rounded-2xl">
+            {
+              showPenSettings &&
+              <TouchableOpacity onPress={() => setShowPenSettings(false)} className="absolute top-0 left-0 right-0 bottom-0 bg-transparent z-10" />
+            }
             <Image
               source={{ uri: screenshotUri }}
               className="absolute inset-0 w-full h-full"
@@ -503,9 +565,9 @@ export default function DrawingModal({
                     <>
                     <BlurMask blur={penStyles[path.selectedTool as keyof typeof penStyles].blur} style={penStyles[path.selectedTool as keyof typeof penStyles].option}/>
                   <Path
-                    path={path.selectedTool === "doubleLine" ? path.path.path1 as any : path.path}
+                    path={path.selectedTool === "doubleLine" ? makeDoubleLinePath(path.currentPath) :  penStyles[path.selectedTool as keyof typeof penStyles].style(path.currentPath)}
                     strokeWidth={penStyles[path.selectedTool as keyof typeof penStyles].path === "path2" ? path.strokeWidth * (penStyles[path.selectedTool as keyof typeof penStyles].width1) : path.strokeWidth}
-                    blendMode="src"
+                    blendMode={path.isEraser ? "dstOut" : "src"}
                     color={penStyles[path.selectedTool as keyof typeof penStyles].path === "path2" ? (penStyles[path.selectedTool as keyof typeof penStyles].color1 === 'selectedColor' ? path.color : penStyles[path.selectedTool as keyof typeof penStyles].color1) : path.color}
                     strokeJoin="round"
                     strokeCap={path.penTipStyle}
@@ -516,9 +578,9 @@ export default function DrawingModal({
                     :
                     <Group>
                     <Path
-                    path={path.selectedTool === "doubleLine" ? path.path.path1 as any : path.path}
+                    path={path.selectedTool === "doubleLine" ? makeDoubleLinePath(path.currentPath).path1 : penStyles[path.selectedTool as keyof typeof penStyles].style(path.currentPath)}
                     strokeWidth={penStyles[path.selectedTool as keyof typeof penStyles].path === "path2" ? path.strokeWidth * (penStyles[path.selectedTool as keyof typeof penStyles].width1) : path.strokeWidth}
-                    blendMode="src"
+                    blendMode={path.isEraser ? "dstOut" : "src"}
                     color={penStyles[path.selectedTool as keyof typeof penStyles].path === "path2" ? (penStyles[path.selectedTool as keyof typeof penStyles].color1 === 'selectedColor' ? path.color : penStyles[path.selectedTool as keyof typeof penStyles].color1) : path.color}
                     strokeJoin="round"
                     strokeCap={path.penTipStyle}
@@ -530,21 +592,22 @@ export default function DrawingModal({
               {penStyles[path.selectedTool as keyof typeof penStyles].path === "path2" &&
               <Group>
                   <Path
-                    path={path.selectedTool === "doubleLine" ? path.path.path2 as any : path.path}
+                    path={path.selectedTool === "doubleLine" ? makeDoubleLinePath(path.currentPath).path2 : penStyles[path.selectedTool as keyof typeof penStyles].style(path.currentPath)}
                     strokeWidth={penStyles[path.selectedTool as keyof typeof penStyles].path === "path2" ? path.strokeWidth * (penStyles[path.selectedTool as keyof typeof penStyles].width2) : path.strokeWidth}
-                    blendMode="src"
+                    blendMode={path.isEraser ? "dstOut" : "src"}
                     strokeJoin="round"
                     strokeCap={path.penTipStyle}
                     color={penStyles[path.selectedTool as keyof typeof penStyles].path === "path2" ? (penStyles[path.selectedTool as keyof typeof penStyles].color2 === 'selectedColor' ? path.color : penStyles[path.selectedTool as keyof typeof penStyles].color2) : path.color}
                     style="stroke"
                     opacity={path.opacity}
                   />
+                  <BlurMask blur={3} style="solid" />
                   </Group>
               }
                 </Group>
                 )
 })}
-              {currentPath.length > 1 && (
+              {currentPath?.length > 1 && (
                 penStyles[selectedTool as keyof typeof penStyles].path === "blur" ?
                 <Group>
                 <BlurMask blur={penStyles[selectedTool as keyof typeof penStyles].blur} style={penStyles[selectedTool as keyof typeof penStyles].option} />
@@ -557,7 +620,7 @@ export default function DrawingModal({
                   strokeCap={penTipStyle}
                   style="stroke"
                   opacity={penOpacity}
-                  blendMode="src"
+                  blendMode={isEraser ? "dstOut" : "src"}
                 />
                 </Group>
                 :
@@ -571,7 +634,7 @@ export default function DrawingModal({
                   strokeCap={penTipStyle}
                   style="stroke"
                   opacity={penOpacity}
-                  blendMode="src"
+                  blendMode={isEraser ? "dstOut" : "src"}
                 />
                 </Group>
                 )}
@@ -586,8 +649,9 @@ export default function DrawingModal({
                     strokeCap={penTipStyle}
                     style="stroke"
                     opacity={penOpacity}
-                    blendMode="src"
+                    blendMode={isEraser ? "dstOut" : "src"}
                     />
+                    <BlurMask blur={3} style="solid" />
                   </Group>}
            
             </Canvas>
@@ -653,12 +717,13 @@ export default function DrawingModal({
             {/* Color Picker Button */}
             <View className="ml-4">
               <TouchableOpacity
-                onPress={() => setShowColorPicker(!showColorPicker)}
-                className="w-12 h-12 rounded-full border-2 border-white p-1"
+                onPress={() => !isEraser && setShowColorPicker(!showColorPicker)}
+                className={`w-12 h-12 rounded-full border-2 border-white p-1 ${isEraser ? 'opacity-50' : ''}`}
+                disabled={isEraser}
               >
                 <View
                   className="w-full h-full rounded-full"
-                  style={{ backgroundColor: selectedColor }}
+                  style={{ backgroundColor: isEraser ? '#999999' : selectedColor }}
                 />
               </TouchableOpacity>
             </View>
