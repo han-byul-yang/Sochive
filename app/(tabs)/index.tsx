@@ -299,7 +299,7 @@ export default function ArchiveScreen() {
         });
 
         // 사진 선택 시 액션 시트 표시
-        toggleActionSheet(true);
+        toggleActionSheet(false);
       },
       onPanResponderMove: (_, gestureState) => {
         setSelectedPhotos((prev) => {
@@ -317,6 +317,7 @@ export default function ArchiveScreen() {
       },
       onPanResponderRelease: () => {
         // 드래그 종료 시 activePhotoIndex를 유지
+        toggleActionSheet(true);
       },
     });
   };
@@ -484,33 +485,15 @@ export default function ArchiveScreen() {
 
   // 사진 클릭 핸들러 수정
   const handlePhotoPress = (index: number) => {
-    if (mode === "edit") {
-      // 편집 모드일 때만 기존 동작 유지
-      setActivePhotoIndex(index);
-
-      // 최대 z-index 찾기
-      const maxZ = Math.max(...selectedPhotos.map((p) => p.zIndex));
-
-      // 선택된 사진의 z-index를 최대값 + 1로 설정
-      setSelectedPhotos((prevPhotos) => {
-        const newPhotos = [...prevPhotos];
-        newPhotos[index].zIndex = maxZ + 1;
-        return newPhotos;
-      });
-
-      toggleActionSheet(true);
-    } else {
-      // 읽기 모드일 때는 사진 모달만 표시
-      setActivePhotoIndex(index);
-      router.push({
-        pathname: "/(memo)/memo",
-        params: {
-          selectedPhotoUri: selectedPhotos[index].originalUri,
-          selectedPhotoMemo: selectedPhotos[index]?.memo,
-        },
-      });
-      //setShowPhotoModal(true);
-    }
+    setActivePhotoIndex(index);
+    router.push({
+      pathname: "/(memo)/memo",
+      params: {
+        selectedPhotoUri: selectedPhotos[index].originalUri,
+        selectedPhotoMemo: selectedPhotos[index]?.memo,
+      },
+    });
+    //setShowPhotoModal(true);
   };
 
   // 사진 자르기 핸들러
