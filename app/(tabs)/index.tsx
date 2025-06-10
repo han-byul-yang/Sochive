@@ -103,7 +103,6 @@ export default function ArchiveScreen() {
   );
   const { data: drawingsData } = useGetDrawings(selectedMonth, selectedYear);
 
-
   // 월 이름 가져오기 함수 추가
   const getMonthName = (month: number) => MONTHS[month - 1];
   const isFirstRender = useRef(true);
@@ -129,9 +128,14 @@ export default function ArchiveScreen() {
       setSelectedPhotos(deepCopiedServerPhotos);
     }
     if (serverBackground !== selectedBackground) {
+      console.log(serverBackground, selectedBackground);
       setSelectedBackground(serverBackground);
     }
   }, [photos]);
+
+  useEffect(() => {
+    console.log(selectedBackground, "selectedBackground");
+  }, [selectedBackground]);
 
   // 애니메이션 값 추가
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -500,10 +504,10 @@ export default function ArchiveScreen() {
       setActivePhotoIndex(index);
       router.push({
         pathname: "/(memo)/memo",
-        params: { 
+        params: {
           selectedPhotoUri: selectedPhotos[index].originalUri,
           selectedPhotoMemo: selectedPhotos[index]?.memo,
-        }
+        },
       });
       //setShowPhotoModal(true);
     }
@@ -788,10 +792,14 @@ export default function ArchiveScreen() {
               className="flex-row items-center"
             >
               <View className="flex-row items-center">
-                <ThemedText className="text-3xl font-gaegu text-key">
+                <ThemedText className="text-2xl font-dohyeon text-key">
                   {getMonthName(selectedMonth)}
                 </ThemedText>
-                <Image source={{ uri: MONTH_EMOJIS[getMonthName(selectedMonth)] }} className="w-8 h-8" resizeMode="contain" />
+                <Image
+                  source={{ uri: MONTH_EMOJIS[getMonthName(selectedMonth)] }}
+                  className="w-8 h-8"
+                  resizeMode="contain"
+                />
                 <ThemedText className="text-xl font-gaegu text-gray-400 ml-2">
                   {selectedYear}
                 </ThemedText>
@@ -801,7 +809,7 @@ export default function ArchiveScreen() {
                   color="#3D3D3D"
                   style={{
                     transform: [{ rotate: "90deg" }],
-                    marginLeft: 4,
+                    marginLeft: 8,
                   }}
                 />
               </View>
@@ -855,7 +863,7 @@ export default function ArchiveScreen() {
                   color="#3D3D3D"
                 />
               </TouchableOpacity>
-              <TouchableOpacity
+              {/* <TouchableOpacity
                 onPress={handleOpenPencilMode}
                 activeOpacity={0.9}
                 className={`p-[8px] rounded-full bg-gray-100`}
@@ -869,7 +877,7 @@ export default function ArchiveScreen() {
                   size={22}
                   color="#3D3D3D"
                 />
-              </TouchableOpacity>
+              </TouchableOpacity> */}
             </View>
           </View>
         </TouchableWithoutFeedback>
@@ -884,6 +892,7 @@ export default function ArchiveScreen() {
           }}
         >
           <ImageBackground
+            key={selectedBackground}
             source={
               selectedBackground ? { uri: selectedBackground } : undefined
             }
@@ -952,24 +961,27 @@ export default function ArchiveScreen() {
                 </TouchableOpacity>
               </Animated.View>
 
-                         {/* DrawingCanvas 컴포넌트 추가 */}
-           {drawingsData && drawingsData.length > 0 && !isClickedPencil && (
-            <>
-                  <View pointerEvents="none" className="flex-1 absolute top-0 left-0 right-0 bottom-0 z-[10000] bg-transparent">
-                  <Canvas style={{ flex: 1 }}>
-                   {
-                    drawingsData[0].drawing.map((drawing: any, index: number) => (
-                      <DrawingCanvas
-                        key={index}
-                        path={drawing}
-                        index={index}
-                      />
-                    ))
-                   }
-                  </Canvas>
+              {/* DrawingCanvas 컴포넌트 추가 */}
+              {drawingsData && drawingsData.length > 0 && !isClickedPencil && (
+                <>
+                  <View
+                    pointerEvents="none"
+                    className="flex-1 absolute top-0 left-0 right-0 bottom-0 z-[10000] bg-transparent"
+                  >
+                    <Canvas style={{ flex: 1 }}>
+                      {drawingsData[0].drawing.map(
+                        (drawing: any, index: number) => (
+                          <DrawingCanvas
+                            key={index}
+                            path={drawing}
+                            index={index}
+                          />
+                        )
+                      )}
+                    </Canvas>
                   </View>
-                  </>
-                )}
+                </>
+              )}
 
               {/* Collage Area */}
               <View
@@ -1001,7 +1013,6 @@ export default function ArchiveScreen() {
                   }
                 }}
               >
-             
                 {selectedPhotos.length > 0 ? (
                   <View className="w-full h-full">
                     {selectedPhotos.map((photo, index) => {

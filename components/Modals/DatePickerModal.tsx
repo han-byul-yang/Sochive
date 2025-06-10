@@ -1,8 +1,8 @@
-import { Modal, TouchableOpacity, View } from "react-native";
+import { Modal, TouchableOpacity, View, Image } from "react-native";
 import { ThemedText } from "../ThemedText";
 import { IconSymbol } from "../ui/IconSymbol";
 import { useMemo } from "react";
-import { MONTHS } from "@/constants/Months";
+import { MONTH_EMOJIS, MONTHS } from "@/constants/Months";
 
 interface DatePickerModalProps {
   showDatePicker: boolean;
@@ -49,21 +49,16 @@ export default function DatePickerModal({
               onPress={() => setSelectedYear(selectedYear - 1)}
               className="p-2"
             >
-              <IconSymbol
-                name="chevron.left"
-                size={24}
-                color="#3D3D3D"
-                style={{ transform: [{ rotate: "180deg" }] }}
-              />
+              <IconSymbol name="chevron.left" size={18} color="#212121" />
             </TouchableOpacity>
-            <ThemedText className="text-xl font-noto-bold">
+            <ThemedText className="text-2xl font-gaegu">
               {selectedYear}
             </ThemedText>
             <TouchableOpacity
               onPress={() => setSelectedYear(selectedYear + 1)}
               className="p-2"
             >
-              <IconSymbol name="chevron.right" size={24} color="#3D3D3D" />
+              <IconSymbol name="chevron.right" size={18} color="#212121" />
             </TouchableOpacity>
           </View>
 
@@ -81,17 +76,22 @@ export default function DatePickerModal({
                   className={`w-1/3 p-2`}
                 >
                   <View
-                    className={`py-3 rounded-xl items-center ${
+                    className={`py-3 rounded-xl items-center flex-row justify-center ${
                       selectedMonth === month ? "bg-key" : "bg-gray-50"
                     }`}
                   >
                     <ThemedText
-                      className={`text-base ${
+                      className={`text-base font-dohyeon ${
                         selectedMonth === month ? "text-white" : "text-key"
                       }`}
                     >
                       {getMonthName(month).slice(0, 3)}
                     </ThemedText>
+                    <Image
+                      source={{ uri: MONTH_EMOJIS[getMonthName(month)] }}
+                      className="w-6 h-6"
+                      resizeMode="contain"
+                    />
                   </View>
                 </TouchableOpacity>
               ))}
