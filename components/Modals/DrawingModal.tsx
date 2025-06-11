@@ -49,6 +49,7 @@ import {
   useUpdateDrawing,
 } from "@/hooks/useGetDrawings";
 import { FontAwesome } from "@expo/vector-icons";
+import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
 
 export type PenTipStyle = "round" | "square" | "butt";
 
@@ -676,6 +677,7 @@ export default function DrawingModal({
   const { mutate: updateDrawingMutate } = useUpdateDrawing(month, year);
   const { data: drawingsPathData } = useGetDrawings(month, year);
   const [isCreate, setIsCreate] = useState(false);
+  const tabBarHeight = useBottomTabBarHeight();
 
   const getStrokeWidth = () => {
     switch (selectedTool) {
@@ -811,22 +813,29 @@ export default function DrawingModal({
     }
   };
 
+  const handleCloseDrawingModal = () => {
+    setPaths([]);
+    setCurrentPath([]);
+    onClose();
+  };
+
   useEffect(() => {
-    if (drawingsPathData && drawingsPathData?.length > 0) {
+    if (drawingsPathData && drawingsPathData?.length > 0 && visible) {
       setPaths(drawingsPathData[0].drawing);
       setIsCreate(false);
     } else {
+      setPaths([]);
       setIsCreate(true);
     }
-  }, [drawingsPathData]);
+  }, [drawingsPathData, visible]);
 
   return (
     <Modal visible={visible} animationType="slide" statusBarTranslucent>
       <TouchableWithoutFeedback onPress={handleCloseModals}>
         <SafeAreaView className="flex-1 bg-[#dce1de]">
           {/* Header */}
-          <View className="flex-row items-center justify-between px-4 py-3">
-            <TouchableOpacity onPress={onClose}>
+          <View className="flex-row items-center justify-between px-4 h-[60px]">
+            <TouchableOpacity onPress={handleCloseDrawingModal}>
               <IconSymbol name="xmark" size={24} color="#fff" />
             </TouchableOpacity>
             <Text className="text-gray-800 text-lg font-medium">그리기</Text>
@@ -1174,7 +1183,12 @@ export default function DrawingModal({
           />
 
           {/* Bottom Toolbar */}
-          <View className="h-20 bg-[#cdd6d1] flex-row items-center px-4">
+          <View
+            className="bg-[#cdd6d1] flex-row items-center px-4"
+            style={{
+              height: tabBarHeight,
+            }}
+          >
             {/* Tools */}
             <ScrollView
               horizontal

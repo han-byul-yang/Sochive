@@ -91,17 +91,20 @@ export default function ArchiveScreen() {
   const {
     data: photos,
     isLoading: isPhotosLoading,
+    isFetching: isPhotosFetching,
+    isRefetching: isPhotosRefetching,
     error,
   } = useGetPhotos(selectedMonth, selectedYear);
-  const { mutate: createPhotoMutate } = useCreatePhoto(
-    selectedMonth,
-    selectedYear
-  );
-  const { mutate: updatePhotoMutate } = useUpdatePhoto(
-    selectedMonth,
-    selectedYear
-  );
-  const { data: drawingsData } = useGetDrawings(selectedMonth, selectedYear);
+  const { mutate: createPhotoMutate, isPending: isCreatePhotoPending } =
+    useCreatePhoto(selectedMonth, selectedYear);
+  const { mutate: updatePhotoMutate, isPending: isUpdatePhotoPending } =
+    useUpdatePhoto(selectedMonth, selectedYear);
+  const {
+    data: drawingsData,
+    isLoading: isDrawingsLoading,
+    isFetching: isDrawingsFetching,
+    isRefetching: isDrawingsRefetching,
+  } = useGetDrawings(selectedMonth, selectedYear);
 
   // 월 이름 가져오기 함수 추가
   const getMonthName = (month: number) => MONTHS[month - 1];
@@ -128,14 +131,9 @@ export default function ArchiveScreen() {
       setSelectedPhotos(deepCopiedServerPhotos);
     }
     if (serverBackground !== selectedBackground) {
-      console.log(serverBackground, selectedBackground);
       setSelectedBackground(serverBackground);
     }
   }, [photos]);
-
-  useEffect(() => {
-    console.log(selectedBackground, "selectedBackground");
-  }, [selectedBackground]);
 
   // 애니메이션 값 추가
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -199,7 +197,7 @@ export default function ArchiveScreen() {
   const toggleMode = (newMode: "read" | "edit") => {
     Animated.timing(fadeAnim, {
       toValue: newMode === "edit" ? 1 : 0,
-      duration: 200,
+      duration: 100,
       useNativeDriver: true,
     }).start();
     if (newMode === "read") {
@@ -486,13 +484,28 @@ export default function ArchiveScreen() {
   // 사진 클릭 핸들러 수정
   const handlePhotoPress = (index: number) => {
     setActivePhotoIndex(index);
-    router.push({
-      pathname: "/(memo)/memo",
-      params: {
-        selectedPhotoUri: selectedPhotos[index].originalUri,
-        selectedPhotoMemo: selectedPhotos[index]?.memo,
-      },
-    });
+    if (mode === "edit") {
+      // 최대 z-index 찾기
+      const maxZ = Math.max(...selectedPhotos.map((p) => p.zIndex));
+
+      // 선택된 사진의 z-index를 최대값 + 1로 설정
+      setSelectedPhotos((prevPhotos) => {
+        const newPhotos = [...prevPhotos];
+        newPhotos[index].zIndex = maxZ + 1;
+        return newPhotos;
+      });
+
+      toggleActionSheet(true);
+    } else {
+      // 읽기 모드일 때는 사진 모달만 표시
+      router.push({
+        pathname: "/(memo)/memo",
+        params: {
+          selectedPhotoUri: selectedPhotos[index].originalUri,
+          selectedPhotoMemo: selectedPhotos[index]?.memo,
+        },
+      });
+    }
     //setShowPhotoModal(true);
   };
 
@@ -674,7 +687,11 @@ export default function ArchiveScreen() {
   };
 
   const handleSaveScreenshot = async () => {
-    saveScreenshot(mainContentRef);
+    if (mode === "read") {
+      saveScreenshot(mainContentRef);
+    } else {
+      Alert.alert("읽기 모드에서만 스크린샷을 저장할 수 있습니다.");
+    }
   };
 
   // 그리기 관련 상태 추가
@@ -727,11 +744,15 @@ export default function ArchiveScreen() {
     };
 
     runScreenshot();
-  }, [mode]);
+  }, [mode, isClickedPencil]);
 
   const handleOpenPencilMode = async () => {
-    setMode("read");
-    setIsClickedPencil(true);
+    if (mode === "read") {
+      //setMode("read");
+      setIsClickedPencil(true);
+    } else {
+      Alert.alert("읽기 모드에서만 그리기 모드를 열 수 있습니다.");
+    }
   };
 
   const handleSaveDrawing = () => {
@@ -751,7 +772,14 @@ export default function ArchiveScreen() {
   return (
     <View className="flex-1 bg-white">
       {/* 로딩 인디케이터 */}
-      {isPhotosLoading && (
+      {(isPhotosLoading ||
+        isPhotosFetching ||
+        isPhotosRefetching ||
+        isCreatePhotoPending ||
+        isUpdatePhotoPending ||
+        isDrawingsLoading ||
+        isDrawingsFetching ||
+        isDrawingsRefetching) && (
         <View
           className="absolute inset-0 h-full w-full bg-transparent items-center justify-center z-50"
           style={{ elevation: 5 }}
@@ -768,7 +796,7 @@ export default function ArchiveScreen() {
       <View className="flex-1 relative">
         {/* Header */}
         <TouchableWithoutFeedback onPress={() => toggleActionSheet(false)}>
-          <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-100">
+          <View className="flex-row items-center justify-between h-[60px] px-4 border-b border-gray-100">
             <TouchableOpacity
               onPress={() => setShowDatePicker(true)}
               activeOpacity={0.9}
@@ -846,7 +874,7 @@ export default function ArchiveScreen() {
                   color="#3D3D3D"
                 />
               </TouchableOpacity>
-              {/* <TouchableOpacity
+              <TouchableOpacity
                 onPress={handleOpenPencilMode}
                 activeOpacity={0.9}
                 className={`p-[8px] rounded-full bg-gray-100`}
@@ -860,7 +888,7 @@ export default function ArchiveScreen() {
                   size={22}
                   color="#3D3D3D"
                 />
-              </TouchableOpacity> */}
+              </TouchableOpacity>
             </View>
           </View>
         </TouchableWithoutFeedback>
@@ -868,59 +896,42 @@ export default function ArchiveScreen() {
         {/* Main Content with Background */}
         <View
           ref={mainContentRef}
-          className="flex-1 overflow-hidden"
+          className="flex-1 relative overflow-hidden"
           onLayout={(event) => {
             const { width, height, x, y } = event.nativeEvent.layout;
             setMainContentSize({ width, height, x, y });
           }}
         >
-          <ImageBackground
-            key={selectedBackground}
-            source={
-              selectedBackground ? { uri: selectedBackground } : undefined
-            }
-            className="flex-1 w-full h-full"
-            imageStyle={{ opacity: 0.7 }}
+          {/* Edit Mode Controls with Animation */}
+          <Animated.View
+            className="relative mb-4 z-[10001] mr-4 mt-2"
+            style={{
+              opacity: fadeAnim,
+              transform: [
+                {
+                  translateY: fadeAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [-20, 0],
+                  }),
+                },
+              ],
+              height: 40, // 버튼 컨테이너 높이 설정
+            }}
           >
+            {/* Background Button */}
             <TouchableOpacity
-              activeOpacity={1}
-              onPress={handleBackgroundTap}
-              style={{ flex: 1 }}
+              className="absolute right-24 bg-gray-100 p-[8px] rounded-full"
+              activeOpacity={0.9}
+              onPress={toggleBackgroundPicker}
+              style={{
+                elevation: 5, // Android에서 z-index 효과를 위해 추가
+              }}
             >
-              {/* Edit Mode Controls with Animation */}
-              <Animated.View
-                className="relative mb-4 z-[10001] mr-4 mt-2"
-                style={{
-                  opacity: fadeAnim,
-                  transform: [
-                    {
-                      translateY: fadeAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [-20, 0],
-                      }),
-                    },
-                  ],
-                  height: 40, // 버튼 컨테이너 높이 설정
-                }}
-              >
-                {/* Background Button */}
-                <TouchableOpacity
-                  className="absolute right-12 bg-gray-100 p-[8px] rounded-full"
-                  activeOpacity={0.9}
-                  onPress={toggleBackgroundPicker}
-                  style={{
-                    elevation: 5, // Android에서 z-index 효과를 위해 추가
-                  }}
-                >
-                  <IconSymbol
-                    name="photo.on.rectangle"
-                    size={24}
-                    color="#3D3D3D"
-                  />
-                </TouchableOpacity>
+              <IconSymbol name="photo.on.rectangle" size={24} color="#3D3D3D" />
+            </TouchableOpacity>
 
-                {/* Pencil Button - 새로 추가 */}
-                <TouchableOpacity
+            {/* Pencil Button - 새로 추가 */}
+            {/* <TouchableOpacity
                   className="absolute right-24 bg-gray-100 p-[8px] rounded-full"
                   activeOpacity={0.9}
                   onPress={handleOpenPencilMode}
@@ -929,180 +940,182 @@ export default function ArchiveScreen() {
                   }}
                 >
                   <IconSymbol name="pencil" size={24} color="#3D3D3D" />
-                </TouchableOpacity>
+                </TouchableOpacity> */}
 
-                {/* Camera Button */}
-                <TouchableOpacity
-                  className="absolute right-0 bg-gray-100 p-[8px] rounded-full"
-                  activeOpacity={0.9}
-                  onPress={handlePickImages}
-                  style={{
-                    elevation: 5, // Android에서 z-index 효과를 위해 추가
-                  }}
-                >
-                  <IconSymbol name="camera" size={24} color="#3D3D3D" />
-                </TouchableOpacity>
-              </Animated.View>
-
-              {/* DrawingCanvas 컴포넌트 추가 */}
-              {drawingsData && drawingsData.length > 0 && !isClickedPencil && (
-                <>
-                  <View
-                    pointerEvents="none"
-                    className="flex-1 absolute top-0 left-0 right-0 bottom-0 z-[10000] bg-transparent"
-                  >
-                    <Canvas style={{ flex: 1 }}>
-                      {drawingsData[0].drawing.map(
-                        (drawing: any, index: number) => (
-                          <DrawingCanvas
-                            key={index}
-                            path={drawing}
-                            index={index}
-                          />
-                        )
-                      )}
-                    </Canvas>
-                  </View>
-                </>
-              )}
-
-              {/* Collage Area */}
-              <View
-                ref={collageAreaRef}
-                className={`bg-white/90 rounded-2xl relative ${
-                  selectedPhotos.length > 0 ? "bg-transparent" : "bg-white/80"
-                }`}
-                style={{
-                  height: 200,
-                  zIndex: 1000,
-                  elevation: 5,
-                }}
-                onLayout={(event) => {
-                  const { width, height, x, y } = event.nativeEvent.layout;
-                  setCollageAreaSize({ width, height });
-
-                  // 콜라주 영역의 절대 위치 측정
-                  if (collageAreaRef.current) {
-                    collageAreaRef.current.measure(
-                      (fx, fy, width, height, px, py) => {
-                        setCollageAreaBounds({
-                          x: px,
-                          y: py,
-                          width,
-                          height,
-                        });
-                      }
-                    );
-                  }
-                }}
-              >
-                {selectedPhotos.length > 0 ? (
-                  <View className="w-full h-full">
-                    {selectedPhotos.map((photo, index) => {
-                      const panResponder = createPanResponder(index);
-                      const resizeRotatePanResponder =
-                        createResizeRotatePanResponder(index);
-                      const isActive = activePhotoIndex === index;
-                      const { width, height } = resizeByMaxDimension(
-                        photo.width || 0,
-                        photo.height || 0
-                      );
-                      return (
-                        <View
-                          key={index}
-                          className="absolute"
-                          style={{
-                            width: width || 160,
-                            height: height || 160,
-                            left: photo.position.x,
-                            top: photo.position.y,
-                            zIndex: photo.zIndex,
-                          }}
-                        >
-                          <TouchableOpacity
-                            activeOpacity={0.9}
-                            onPressOut={() => handlePhotoPress(index)}
-                          >
-                            <Animated.View
-                              {...(mode === "edit"
-                                ? panResponder.panHandlers
-                                : {})}
-                              className="w-full h-full rounded-lg overflow-hidden"
-                              style={{
-                                transform: [
-                                  {
-                                    rotate:
-                                      photoAnimations[
-                                        index
-                                      ]?.rotation.interpolate({
-                                        inputRange: [-360, 360],
-                                        outputRange: ["-360deg", "360deg"],
-                                      }) || `${photo.rotation}deg`,
-                                  },
-                                  {
-                                    scale:
-                                      photoAnimations[index]?.scale ||
-                                      photo.scale,
-                                  },
-                                ],
-                                width: width || 160,
-                                height: height || 160,
-                                borderWidth:
-                                  isActive && mode === "edit" && showActionSheet
-                                    ? 1.5
-                                    : 0,
-                                borderColor: "#6C4E31",
-                                borderRadius: 8,
-                                shadowColor: "#000",
-                                shadowOffset: { width: 0, height: 2 },
-                                shadowOpacity: 0.8,
-                                shadowRadius: 3.84,
-                              }}
-                            >
-                              {photo.filter ? (
-                                <View style={{ width: "100%", height: "100%" }}>
-                                  <FilteredImage
-                                    photo={photo}
-                                    filterType={photo.filter}
-                                  />
-                                </View>
-                              ) : (
-                                <Image
-                                  source={{ uri: photo.uri }}
-                                  style={{ width: "100%", height: "100%" }}
-                                  resizeMode="contain"
-                                />
-                              )}
-                            </Animated.View>
-                          </TouchableOpacity>
-
-                          {/* 크기 조절 및 회전 핸들 컴포넌트 - 편집 모드일 때만 표시 */}
-                          {mode === "edit" && showActionSheet && (
-                            <ResizeRotateHandle
-                              isActive={isActive}
-                              photoIndex={index}
-                              photo={photo}
-                              photoAnimations={photoAnimations}
-                              panResponder={resizeRotatePanResponder}
-                              onDelete={handleDeletePhoto}
-                            />
-                          )}
-                        </View>
-                      );
-                    })}
-                  </View>
-                ) : (
-                  <View className="items-center justify-center p-8 h-full">
-                    <ThemedText className="text-gray-400">
-                      {mode === "edit"
-                        ? "사진을 추가하여 콜라주를 만들어보세요"
-                        : "이번 달 기록이 없습니다"}
-                    </ThemedText>
-                  </View>
-                )}
-              </View>
+            {/* Camera Button */}
+            <TouchableOpacity
+              className="absolute right-12 bg-gray-100 p-[8px] rounded-full"
+              activeOpacity={0.9}
+              onPress={handlePickImages}
+              style={{
+                elevation: 5, // Android에서 z-index 효과를 위해 추가
+              }}
+            >
+              <IconSymbol name="camera" size={24} color="#3D3D3D" />
             </TouchableOpacity>
-          </ImageBackground>
+          </Animated.View>
+          <ImageBackground
+            key={selectedBackground}
+            source={
+              selectedBackground ? { uri: selectedBackground } : undefined
+            }
+            className="flex-1 absolute top-0 w-full h-full"
+            imageStyle={{ opacity: 0.7 }}
+          />
+          {/* DrawingCanvas 컴포넌트 추가 */}
+          {drawingsData && drawingsData.length > 0 && !isClickedPencil && (
+            <View
+              pointerEvents="none"
+              className="flex-1 absolute top-0 left-0 right-0 bottom-0 z-[10000] bg-transparent"
+            >
+              <Canvas style={{ flex: 1 }}>
+                {drawingsData[0].drawing.map((drawing: any, index: number) => (
+                  <DrawingCanvas key={index} path={drawing} index={index} />
+                ))}
+              </Canvas>
+            </View>
+          )}
+          <TouchableOpacity
+            activeOpacity={1}
+            onPress={handleBackgroundTap}
+            style={{ flex: 1 }}
+          >
+            {/* Collage Area */}
+            <View
+              ref={collageAreaRef}
+              className={`bg-white/90 rounded-2xl relative ${
+                selectedPhotos.length > 0 ? "bg-transparent" : "bg-white/80"
+              }`}
+              style={{
+                height: 200,
+                zIndex: 1000,
+                elevation: 5,
+              }}
+              onLayout={(event) => {
+                const { width, height, x, y } = event.nativeEvent.layout;
+                setCollageAreaSize({ width, height });
+
+                // 콜라주 영역의 절대 위치 측정
+                if (collageAreaRef.current) {
+                  collageAreaRef.current.measure(
+                    (fx, fy, width, height, px, py) => {
+                      setCollageAreaBounds({
+                        x: px,
+                        y: py,
+                        width,
+                        height,
+                      });
+                    }
+                  );
+                }
+              }}
+            >
+              {selectedPhotos.length > 0 ? (
+                <View className="w-full h-full">
+                  {selectedPhotos.map((photo, index) => {
+                    const panResponder = createPanResponder(index);
+                    const resizeRotatePanResponder =
+                      createResizeRotatePanResponder(index);
+                    const isActive = activePhotoIndex === index;
+                    const { width, height } = resizeByMaxDimension(
+                      photo.width || 0,
+                      photo.height || 0
+                    );
+                    return (
+                      <View
+                        key={index}
+                        className="absolute"
+                        style={{
+                          width: width || 160,
+                          height: height || 160,
+                          left: photo.position.x,
+                          top: photo.position.y,
+                          zIndex: photo.zIndex,
+                        }}
+                      >
+                        <TouchableOpacity
+                          activeOpacity={0.9}
+                          onPressOut={() => handlePhotoPress(index)}
+                        >
+                          <Animated.View
+                            {...(mode === "edit"
+                              ? panResponder.panHandlers
+                              : {})}
+                            className="w-full h-full rounded-lg overflow-hidden"
+                            style={{
+                              transform: [
+                                {
+                                  rotate:
+                                    photoAnimations[
+                                      index
+                                    ]?.rotation.interpolate({
+                                      inputRange: [-360, 360],
+                                      outputRange: ["-360deg", "360deg"],
+                                    }) || `${photo.rotation}deg`,
+                                },
+                                {
+                                  scale:
+                                    photoAnimations[index]?.scale ||
+                                    photo.scale,
+                                },
+                              ],
+                              width: width || 160,
+                              height: height || 160,
+                              borderWidth:
+                                isActive && mode === "edit" && showActionSheet
+                                  ? 1.5
+                                  : 0,
+                              borderColor: "#6C4E31",
+                              borderRadius: 8,
+                              shadowColor: "#000",
+                              shadowOffset: { width: 0, height: 2 },
+                              shadowOpacity: 0.8,
+                              shadowRadius: 3.84,
+                            }}
+                          >
+                            {photo.filter ? (
+                              <View style={{ width: "100%", height: "100%" }}>
+                                <FilteredImage
+                                  photo={photo}
+                                  filterType={photo.filter}
+                                />
+                              </View>
+                            ) : (
+                              <Image
+                                source={{ uri: photo.uri }}
+                                style={{ width: "100%", height: "100%" }}
+                                resizeMode="contain"
+                              />
+                            )}
+                          </Animated.View>
+                        </TouchableOpacity>
+
+                        {/* 크기 조절 및 회전 핸들 컴포넌트 - 편집 모드일 때만 표시 */}
+                        {mode === "edit" && showActionSheet && (
+                          <ResizeRotateHandle
+                            isActive={isActive}
+                            photoIndex={index}
+                            photo={photo}
+                            photoAnimations={photoAnimations}
+                            panResponder={resizeRotatePanResponder}
+                            onDelete={handleDeletePhoto}
+                          />
+                        )}
+                      </View>
+                    );
+                  })}
+                </View>
+              ) : (
+                <View className="items-center justify-center p-8 h-full">
+                  <ThemedText className="text-gray-400">
+                    {mode === "edit"
+                      ? "사진을 추가하여 콜라주를 만들어보세요"
+                      : "이번 달 기록이 없습니다"}
+                  </ThemedText>
+                </View>
+              )}
+            </View>
+          </TouchableOpacity>
         </View>
 
         {/* Background Selector Component */}
