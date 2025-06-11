@@ -51,6 +51,11 @@ import { useGetDrawings } from "@/hooks/useGetDrawings";
 import { Canvas } from "@shopify/react-native-skia";
 import DrawingCanvas from "@/components/Archive/DrawingCanvas";
 import { router } from "expo-router";
+import {
+  Feather,
+  MaterialCommunityIcons,
+  MaterialIcons,
+} from "@expo/vector-icons";
 
 export default function ArchiveScreen() {
   const [mode, setMode] = useState<"read" | "edit">("read");
@@ -881,8 +886,8 @@ export default function ArchiveScreen() {
                     mode === "edit" ? "bg-key" : "bg-gray-100"
                   }`}
                 >
-                  <IconSymbol
-                    name={mode === "edit" ? "xmark" : "pencil"}
+                  <Feather
+                    name={mode === "edit" ? "x" : "file-plus"}
                     size={22}
                     color={mode === "edit" ? "#fff" : "#3D3D3D"}
                   />
@@ -908,17 +913,6 @@ export default function ArchiveScreen() {
                 }}
               >
                 <TouchableOpacity
-                  onPress={handleSaveScreenshot}
-                  activeOpacity={0.9}
-                  className={`p-[8px] rounded-full bg-gray-100`}
-                >
-                  <IconSymbol
-                    name="photo.on.rectangle"
-                    size={22}
-                    color="#3D3D3D"
-                  />
-                </TouchableOpacity>
-                <TouchableOpacity
                   onPress={handleOpenPencilMode}
                   activeOpacity={0.9}
                   className={`p-[8px] rounded-full bg-gray-100`}
@@ -927,8 +921,19 @@ export default function ArchiveScreen() {
                     zIndex: 10000,
                   }}
                 >
-                  <IconSymbol
-                    name="pencil.and.ellipsis.rectangle"
+                  <MaterialCommunityIcons
+                    name="draw"
+                    size={22}
+                    color="#3D3D3D"
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleSaveScreenshot}
+                  activeOpacity={0.9}
+                  className={`p-[8px] rounded-full bg-gray-100`}
+                >
+                  <MaterialCommunityIcons
+                    name="content-save"
                     size={22}
                     color="#3D3D3D"
                   />
@@ -972,7 +977,7 @@ export default function ArchiveScreen() {
                 elevation: 5, // Android에서 z-index 효과를 위해 추가
               }}
             >
-              <IconSymbol name="photo.on.rectangle" size={24} color="#3D3D3D" />
+              <MaterialIcons name="wallpaper" size={24} color="#3D3D3D" />
             </TouchableOpacity>
 
             {/* Pencil Button - 새로 추가 */}
@@ -996,7 +1001,7 @@ export default function ArchiveScreen() {
                 elevation: 5, // Android에서 z-index 효과를 위해 추가
               }}
             >
-              <IconSymbol name="camera" size={24} color="#3D3D3D" />
+              <IconSymbol name="photo.on.rectangle" size={24} color="#3D3D3D" />
             </TouchableOpacity>
           </Animated.View>
           <ImageBackground
