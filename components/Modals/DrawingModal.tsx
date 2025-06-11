@@ -492,37 +492,39 @@ function ColorPickerModal({
   if (!shouldRender) return null;
 
   return (
-    <View className="absolute z-10 bottom-28 left-0 right-0">
-      <Animated.View
-        style={{
-          opacity: opacityAnim,
-          transform: [{ translateY: translateYAnim }, { scale: scaleAnim }],
-          transformOrigin: "bottom right",
-        }}
-      >
-        <View
-          className="relative rounded-t-2xl p-6"
+    <TouchableWithoutFeedback onPress={() => {}}>
+      <View className="absolute z-10 bottom-28 left-0 right-0">
+        <Animated.View
           style={{
-            backgroundColor: "rgba(255, 255, 255, 0.9)",
+            opacity: opacityAnim,
+            transform: [{ translateY: translateYAnim }, { scale: scaleAnim }],
+            transformOrigin: "bottom right",
           }}
         >
-          <View className="flex-row items-center justify-between mb-6">
-            <Text className="text-gray-800 text-lg font-medium">색상</Text>
-            <TouchableOpacity onPress={onClose}>
-              <Text className="text-[#578E7E] font-medium">완료</Text>
-            </TouchableOpacity>
+          <View
+            className="relative rounded-t-2xl p-6"
+            style={{
+              backgroundColor: "rgba(255, 255, 255, 0.9)",
+            }}
+          >
+            <View className="flex-row items-center justify-between mb-6">
+              <Text className="text-gray-800 text-lg font-medium">색상</Text>
+              <TouchableOpacity onPress={onClose}>
+                <Text className="text-[#578E7E] font-medium">완료</Text>
+              </TouchableOpacity>
+            </View>
+            <WheelColorPicker
+              color={color}
+              onColorChange={onColorChange}
+              thumbSize={30}
+              sliderSize={30}
+              gapSize={20}
+              autoResetSlider
+            />
           </View>
-          <WheelColorPicker
-            color={color}
-            onColorChange={onColorChange}
-            thumbSize={30}
-            sliderSize={30}
-            gapSize={20}
-            autoResetSlider
-          />
-        </View>
-      </Animated.View>
-    </View>
+        </Animated.View>
+      </View>
+    </TouchableWithoutFeedback>
   );
 }
 
@@ -539,142 +541,97 @@ function EraserSettingsModal({
   onSizeChange,
   onClose,
 }: EraserSettingsModalProps) {
-  const sizeSliderAnim = useRef(new Animated.Value((size / 50) * 100)).current;
-  const sliderRef = useRef<View>(null);
   const scaleAnim = useRef(new Animated.Value(0)).current;
+  const translateYAnim = useRef(new Animated.Value(-10)).current;
+  const opacityAnim = useRef(new Animated.Value(0)).current;
+  const [shouldRender, setShouldRender] = useState(false);
+
+  const eraserSizes = [10, 15, 25, 35];
 
   useEffect(() => {
     if (visible) {
-      // 모달이 나타날 때 스케일 애니메이션
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        useNativeDriver: true,
-        tension: 150,
-        friction: 8,
-      }).start();
+      setShouldRender(true);
+      // 모달이 나타날 때 위에서 아래로 부드럽게 나타나는 애니메이션
+      Animated.parallel([
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          useNativeDriver: true,
+          tension: 120,
+          friction: 8,
+        }),
+        Animated.spring(translateYAnim, {
+          toValue: 0,
+          useNativeDriver: true,
+          tension: 120,
+          friction: 8,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 1,
+          duration: 200,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]).start();
     } else {
-      // 모달이 사라질 때 스케일 애니메이션
-      Animated.timing(scaleAnim, {
-        toValue: 0,
-        duration: 200,
-        useNativeDriver: true,
-      }).start();
+      // 모달이 사라질 때 위로 올라가면서 사라지는 애니메이션
+      Animated.parallel([
+        Animated.timing(scaleAnim, {
+          toValue: 0,
+          duration: 150,
+          easing: Easing.in(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(translateYAnim, {
+          toValue: -10,
+          duration: 150,
+          easing: Easing.in(Easing.cubic),
+          useNativeDriver: true,
+        }),
+        Animated.timing(opacityAnim, {
+          toValue: 0,
+          duration: 150,
+          easing: Easing.in(Easing.cubic),
+          useNativeDriver: true,
+        }),
+      ]).start(() => {
+        setShouldRender(false);
+      });
     }
   }, [visible]);
 
-  if (!visible) return null;
-
-  const updateSliderPosition = (
-    evt: any,
-    onUpdate: (value: number) => void,
-    maxValue: number
-  ) => {
-    if (sliderRef.current) {
-      const { locationX } = evt.nativeEvent;
-      sliderRef.current.measure((x, y, width) => {
-        const percentage = Math.max(0, Math.min(1, locationX / width));
-        const value = percentage * maxValue;
-        onUpdate(value);
-      });
-    }
-  };
-
-  const sizeSliderPanResponder = PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onMoveShouldSetPanResponder: () => true,
-    onPanResponderGrant: () => {
-      // 터치 시작 시 처리
-    },
-    onPanResponderMove: (evt) => {
-      updateSliderPosition(
-        evt,
-        (value) => {
-          const newSize = Math.max(5, Math.min(50, value));
-          sizeSliderAnim.setValue((newSize / 50) * 100);
-          onSizeChange(newSize);
-        },
-        50
-      );
-    },
-  });
-
-  // 슬라이더 바의 너비를 위한 애니메이션 스타일
-  const sizeBarStyle = {
-    width: sizeSliderAnim.interpolate({
-      inputRange: [0, 100],
-      outputRange: ["0%", "100%"],
-    }),
-  };
-
-  // 슬라이더 핸들의 위치를 위한 애니메이션 스타일
-  const sizeHandleStyle = {
-    left: sizeSliderAnim.interpolate({
-      inputRange: [0, 100],
-      outputRange: ["0%", "100%"],
-    }),
-  };
+  if (!shouldRender) return null;
 
   return (
     <TouchableWithoutFeedback onPress={() => {}}>
       <Animated.View
-        className="absolute bottom-28 left-4 right-4 bg-[#333333] rounded-2xl p-4 z-20"
+        className="absolute top-0 right-2 bg-white rounded-xl p-3 z-20 shadow-lg"
         style={{
-          transform: [{ scale: scaleAnim }],
+          opacity: opacityAnim,
+          transform: [{ translateY: translateYAnim }, { scale: scaleAnim }],
+          transformOrigin: "top left",
+          elevation: 5,
         }}
       >
-        {/* Header */}
-        <View className="flex-row items-center justify-between mb-4">
-          <View className="flex-row items-center">
-            <FontAwesome name="eraser" size={20} color="#578E7E" />
-            <Text className="text-white text-lg font-medium ml-2">
-              지우개 설정
-            </Text>
-          </View>
-          <TouchableOpacity onPress={onClose}>
-            <Text className="text-blue-400 font-medium">완료</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Size Slider */}
-        <View className="mb-2">
-          <View className="flex-row justify-between mb-2">
-            <Text className="text-white text-sm">지우개 크기</Text>
-            <Text className="text-gray-400 text-sm">{Math.round(size)}</Text>
-          </View>
-          <View className="flex-row items-center">
-            <MaterialIcons name="remove" size={20} color="#666" />
-            <View
-              ref={sliderRef}
-              className="flex-1 mx-2 h-1 bg-gray-700 rounded-full"
+        {/* Size Options */}
+        <View className="flex-row items-center space-x-3">
+          {eraserSizes.map((sizeOption, index) => (
+            <TouchableOpacity
+              key={sizeOption}
+              onPress={() => onSizeChange(sizeOption)}
+              className="items-center justify-center"
             >
-              <Animated.View
-                className="absolute h-1 bg-[#578E7E] rounded-full"
-                style={sizeBarStyle}
-              />
-              <Animated.View
-                {...sizeSliderPanResponder.panHandlers}
-                className="absolute w-5 h-5 bg-white rounded-full -top-2"
-                style={[sizeHandleStyle, { marginLeft: -10 }]}
-              />
               <View
-                className="absolute w-full h-8 -top-4"
-                {...sizeSliderPanResponder.panHandlers}
+                className={`rounded-full ${
+                  size === sizeOption ? "bg-[#578E7E]" : "bg-gray-300"
+                }`}
+                style={{
+                  width: 8 + index * 4,
+                  height: 8 + index * 4,
+                }}
               />
-            </View>
-            <MaterialIcons name="add" size={20} color="#666" />
-          </View>
-        </View>
-
-        {/* Eraser Preview */}
-        <View className="items-center mt-4">
-          <Text className="text-gray-400 text-xs mb-2">미리보기</Text>
-          <View
-            className="bg-[#578E7E] rounded-full"
-            style={{
-              width: Math.max(10, size * 0.8),
-              height: Math.max(10, size * 0.8),
-            }}
-          />
+              <Text className="text-xs text-gray-600 mt-1">{sizeOption}</Text>
+            </TouchableOpacity>
+          ))}
         </View>
       </Animated.View>
     </TouchableWithoutFeedback>
@@ -698,7 +655,7 @@ export default function DrawingModal({
   const [penTipStyle, setPenTipStyle] = useState<PenTipStyle>("round");
   const [isEraser, setIsEraser] = useState(false);
   const [showEraserSettings, setShowEraserSettings] = useState(false);
-  const [eraserSize, setEraserSize] = useState(20);
+  const [eraserSize, setEraserSize] = useState(15);
   const [dots, setDots] = useState<Point[]>([]);
   const [paths, setPaths] = useState<
     {
@@ -872,7 +829,7 @@ export default function DrawingModal({
             <TouchableOpacity onPress={onClose}>
               <IconSymbol name="xmark" size={24} color="#fff" />
             </TouchableOpacity>
-            <Text className="text-white text-lg font-medium">그리기</Text>
+            <Text className="text-gray-800 text-lg font-medium">그리기</Text>
             <View className="flex-row items-center space-x-4">
               <TouchableWithoutFeedback onPress={() => {}}>
                 <TouchableOpacity
@@ -900,16 +857,25 @@ export default function DrawingModal({
                 </TouchableOpacity>
               </TouchableWithoutFeedback>
               <TouchableOpacity onPress={handleSave} className="p-1">
-                <Text className="text-blue-400 font-medium">완료</Text>
+                <Text className="text-[#578E7E] font-medium">완료</Text>
               </TouchableOpacity>
             </View>
+          </View>
+          {/* Eraser Settings Modal */}
+          <View className="relative z-10">
+            <EraserSettingsModal
+              visible={showEraserSettings}
+              size={eraserSize}
+              onSizeChange={setEraserSize}
+              onClose={() => setShowEraserSettings(false)}
+            />
           </View>
 
           {/* Drawing Area */}
           <View className="flex-1 relative bg-white rounded-2xl">
-            {showPenSettings && (
+            {(showPenSettings || showEraserSettings || showColorPicker) && (
               <TouchableOpacity
-                onPress={() => setShowPenSettings(false)}
+                onPress={handleCloseModals}
                 className="absolute top-0 left-0 right-0 bottom-0 bg-transparent z-10"
               />
             )}
@@ -1197,14 +1163,6 @@ export default function DrawingModal({
             onSizeChange={setPenSize}
             onOpacityChange={setPenOpacity}
             onPenTipStyleChange={setPenTipStyle}
-          />
-
-          {/* Eraser Settings Modal */}
-          <EraserSettingsModal
-            visible={showEraserSettings}
-            size={eraserSize}
-            onSizeChange={setEraserSize}
-            onClose={() => setShowEraserSettings(false)}
           />
 
           {/* Color Picker Modal */}
