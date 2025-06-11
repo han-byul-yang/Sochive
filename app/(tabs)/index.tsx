@@ -138,6 +138,7 @@ export default function ArchiveScreen() {
   // 애니메이션 값 추가
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const backgroundPickerAnim = useRef(new Animated.Value(0)).current;
+  const headerIconsAnim = useRef(new Animated.Value(0)).current;
   const photoAnimations = useRef<{
     [key: number]: {
       rotation: Animated.Value;
@@ -195,11 +196,19 @@ export default function ArchiveScreen() {
 
   // 모드 전환 애니메이션
   const toggleMode = (newMode: "read" | "edit") => {
-    Animated.timing(fadeAnim, {
-      toValue: newMode === "edit" ? 1 : 0,
-      duration: 100,
-      useNativeDriver: true,
-    }).start();
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: newMode === "edit" ? 1 : 0,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(headerIconsAnim, {
+        toValue: newMode === "edit" ? 1 : 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
     if (newMode === "read") {
       setResetPhotos(true);
     }
@@ -827,68 +836,104 @@ export default function ArchiveScreen() {
             </TouchableOpacity>
 
             {/* Header Right Buttons */}
-            <View className="flex-row items-center space-x-2">
-              {/* Save Button (Edit Mode Only) */}
-              {mode === "edit" && (
-                <TouchableOpacity
-                  onPress={
-                    photos && photos.length > 0
-                      ? handleEditPhotos
-                      : handleSavePhotos
-                  }
-                  className="bg-[#DA6C6C] px-4 py-2 rounded-lg"
-                  activeOpacity={0.9}
-                  disabled={isSaving || selectedPhotos.length === 0}
-                  style={{
-                    opacity: isSaving || selectedPhotos.length === 0 ? 0.5 : 1,
-                  }}
-                >
-                  <Text className="text-white font-medium">
-                    {isSaving ? "저장 중..." : "저장"}
-                  </Text>
-                </TouchableOpacity>
-              )}
-
-              {/* Mode Toggle Button */}
-              <TouchableOpacity
-                onPress={handleModeToggle}
-                activeOpacity={0.9}
-                className={`p-[8px] rounded-full ${
-                  mode === "edit" ? "bg-key" : "bg-gray-100"
-                }`}
-              >
-                <IconSymbol
-                  name={mode === "edit" ? "xmark" : "pencil"}
-                  size={22}
-                  color={mode === "edit" ? "#fff" : "#3D3D3D"}
-                />
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={handleSaveScreenshot}
-                activeOpacity={0.9}
-                className={`p-[8px] rounded-full bg-gray-100`}
-              >
-                <IconSymbol
-                  name="photo.on.rectangle"
-                  size={22}
-                  color="#3D3D3D"
-                />
-              </TouchableOpacity>
-              <TouchableOpacity
-                onPress={handleOpenPencilMode}
-                activeOpacity={0.9}
-                className={`p-[8px] rounded-full bg-gray-100`}
+            <View className="flex-row items-center space-x-2 w-[130px]">
+              {/* Save Button and Mode Toggle - move right in edit mode */}
+              <Animated.View
+                className="flex-row items-center space-x-2"
                 style={{
-                  elevation: 5,
-                  zIndex: 10000, // 다른 요소들보다 위에 표시되도록 zIndex 설정
+                  transform: [
+                    {
+                      translateX: headerIconsAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0, 28], // 76px right to fill the space
+                      }),
+                    },
+                  ],
                 }}
               >
-                <IconSymbol
-                  name="pencil.and.ellipsis.rectangle"
-                  size={22}
-                  color="#3D3D3D"
-                />
-              </TouchableOpacity>
+                {/* Save Button (Edit Mode Only) */}
+                {mode === "edit" && (
+                  <TouchableOpacity
+                    onPress={
+                      photos && photos.length > 0
+                        ? handleEditPhotos
+                        : handleSavePhotos
+                    }
+                    className="bg-[#DA6C6C] px-4 py-2 rounded-lg"
+                    activeOpacity={0.9}
+                    disabled={isSaving || selectedPhotos.length === 0}
+                    style={{
+                      opacity:
+                        isSaving || selectedPhotos.length === 0 ? 0.5 : 1,
+                    }}
+                  >
+                    <Text className="text-white font-medium">
+                      {isSaving ? "저장 중..." : "저장"}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+
+                {/* Mode Toggle Button */}
+                <TouchableOpacity
+                  onPress={handleModeToggle}
+                  activeOpacity={0.9}
+                  className={`p-[8px] rounded-full ${
+                    mode === "edit" ? "bg-key" : "bg-gray-100"
+                  }`}
+                >
+                  <IconSymbol
+                    name={mode === "edit" ? "xmark" : "pencil"}
+                    size={22}
+                    color={mode === "edit" ? "#fff" : "#3D3D3D"}
+                  />
+                </TouchableOpacity>
+              </Animated.View>
+
+              {/* Screenshot and Drawing buttons - slide out in edit mode */}
+              <Animated.View
+                className="flex-row items-center space-x-2"
+                style={{
+                  transform: [
+                    {
+                      translateX: headerIconsAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0, 100],
+                      }),
+                    },
+                  ],
+                  opacity: headerIconsAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [1, 0],
+                  }),
+                }}
+              >
+                <TouchableOpacity
+                  onPress={handleSaveScreenshot}
+                  activeOpacity={0.9}
+                  className={`p-[8px] rounded-full bg-gray-100`}
+                >
+                  <IconSymbol
+                    name="photo.on.rectangle"
+                    size={22}
+                    color="#3D3D3D"
+                  />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={handleOpenPencilMode}
+                  activeOpacity={0.9}
+                  className={`p-[8px] rounded-full bg-gray-100`}
+                  style={{
+                    elevation: 5,
+                    zIndex: 10000,
+                  }}
+                >
+                  <IconSymbol
+                    name="pencil.and.ellipsis.rectangle"
+                    size={22}
+                    color="#3D3D3D"
+                  />
+                </TouchableOpacity>
+              </Animated.View>
             </View>
           </View>
         </TouchableWithoutFeedback>
@@ -920,7 +965,7 @@ export default function ArchiveScreen() {
           >
             {/* Background Button */}
             <TouchableOpacity
-              className="absolute right-24 bg-gray-100 p-[8px] rounded-full"
+              className="absolute right-0 bg-gray-100 p-[8px] rounded-full"
               activeOpacity={0.9}
               onPress={toggleBackgroundPicker}
               style={{
