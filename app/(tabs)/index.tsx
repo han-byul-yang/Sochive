@@ -1005,8 +1005,12 @@ export default function ArchiveScreen() {
               selectedBackground ? { uri: selectedBackground } : undefined
             }
             className="flex-1 absolute top-0 w-full h-full"
-            imageStyle={{ opacity: 0.7 }}
-          />
+          >
+            <View
+              className="flex-1 absolute top-0 w-full h-full"
+              style={{ backgroundColor: "rgba(255, 255, 255, 0.1)" }}
+            />
+          </ImageBackground>
           {/* DrawingCanvas 컴포넌트 추가 */}
           {drawingsData && drawingsData.length > 0 && !isClickedPencil && (
             <View
