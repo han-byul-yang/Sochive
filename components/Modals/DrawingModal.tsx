@@ -6,13 +6,11 @@ import {
   Modal,
   TouchableOpacity,
   SafeAreaView,
-  Dimensions,
   ScrollView,
   Animated,
   PanResponder,
   Easing,
   TouchableWithoutFeedback,
-  Pressable,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { IconSymbol } from "@/components/ui/IconSymbol";
@@ -50,6 +48,7 @@ import {
 } from "@/hooks/useGetDrawings";
 import { FontAwesome } from "@expo/vector-icons";
 import { useBottomTabBarHeight } from "@react-navigation/bottom-tabs";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export type PenTipStyle = "round" | "square" | "butt";
 
@@ -180,6 +179,8 @@ function PenSettingsModal({
   const translateYAnim = useRef(new Animated.Value(50)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const [shouldRender, setShouldRender] = useState(false);
+  const tabBarHeight = useBottomTabBarHeight();
+  const insetsHeight = useSafeAreaInsets();
 
   useEffect(() => {
     if (visible) {
@@ -321,12 +322,13 @@ function PenSettingsModal({
   return (
     <TouchableWithoutFeedback onPress={() => {}}>
       <Animated.View
-        className="absolute bottom-28 left-4 right-4 rounded-2xl p-4"
+        className="absolute left-4 right-4 rounded-2xl p-4"
         style={{
           opacity: opacityAnim,
           transform: [{ translateY: translateYAnim }, { scale: scaleAnim }],
           transformOrigin: "bottom left",
           backgroundColor: "rgba(220, 225, 222, 0.9)",
+          bottom: tabBarHeight + insetsHeight.bottom,
         }}
       >
         {/* Size Slider */}
@@ -437,6 +439,8 @@ function ColorPickerModal({
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
   const opacityAnim = useRef(new Animated.Value(0)).current;
   const [shouldRender, setShouldRender] = useState(false);
+  const tabBarHeight = useBottomTabBarHeight();
+  const insetsHeight = useSafeAreaInsets();
 
   useEffect(() => {
     if (visible) {
@@ -494,7 +498,12 @@ function ColorPickerModal({
 
   return (
     <TouchableWithoutFeedback onPress={() => {}}>
-      <View className="absolute z-10 bottom-28 left-0 right-0">
+      <View
+        className="absolute z-10 left-0 right-0"
+        style={{
+          bottom: tabBarHeight + insetsHeight.bottom,
+        }}
+      >
         <Animated.View
           style={{
             opacity: opacityAnim,
@@ -672,7 +681,6 @@ export default function DrawingModal({
   >([]);
   const [currentPath, setCurrentPath] = useState<Point[]>([]);
   const canvasRef = useCanvasRef();
-  const { width, height } = Dimensions.get("window");
   const { mutate: createDrawingMutate } = useCreateDrawing(month, year);
   const { mutate: updateDrawingMutate } = useUpdateDrawing(month, year);
   const { data: drawingsPathData } = useGetDrawings(month, year);

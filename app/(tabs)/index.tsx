@@ -47,7 +47,11 @@ import { captureRef } from "react-native-view-shot";
 import DrawingPalette from "@/components/DrawingPalette";
 import { Point } from "react-native-gesture-handler/lib/typescript/web/interfaces";
 import DrawingModal from "@/components/Modals/DrawingModal";
-import { useGetDrawings } from "@/hooks/useGetDrawings";
+import {
+  useCreateDrawing,
+  useGetDrawings,
+  useUpdateDrawing,
+} from "@/hooks/useGetDrawings";
 import { Canvas } from "@shopify/react-native-skia";
 import DrawingCanvas from "@/components/Archive/DrawingCanvas";
 import { router } from "expo-router";
@@ -110,6 +114,14 @@ export default function ArchiveScreen() {
     isFetching: isDrawingsFetching,
     isRefetching: isDrawingsRefetching,
   } = useGetDrawings(selectedMonth, selectedYear);
+  const { isPending: isUpdateDrawingPending } = useUpdateDrawing(
+    selectedMonth,
+    selectedYear
+  );
+  const { isPending: isCreateDrawingPending } = useCreateDrawing(
+    selectedMonth,
+    selectedYear
+  );
 
   // 월 이름 가져오기 함수 추가
   const getMonthName = (month: number) => MONTHS[month - 1];
@@ -468,11 +480,11 @@ export default function ArchiveScreen() {
 
   // 사진 삭제 함수 추가
   const handleDeletePhoto = (index: number) => {
-    // 애니메이션 값 정리
-    if (photoAnimations[index]) {
-      photoAnimations[index].rotation.setValue(0);
-      photoAnimations[index].scale.setValue(1);
-    }
+    // // 애니메이션 값 정리
+    // if (photoAnimations[index]) {
+    //   photoAnimations[index].rotation.setValue(0);
+    //   photoAnimations[index].scale.setValue(1);
+    // }
 
     // 선택된 사진 배열에서 해당 인덱스 제거
     setSelectedPhotos((prev) => {
@@ -480,7 +492,6 @@ export default function ArchiveScreen() {
       newPhotos.splice(index, 1);
       return newPhotos;
     });
-
     // 활성 사진 인덱스 초기화
     setActivePhotoIndex(null);
   };
@@ -745,7 +756,7 @@ export default function ArchiveScreen() {
     const runScreenshot = async () => {
       if (mode === "read" && isClickedPencil) {
         try {
-          await new Promise((resolve) => setTimeout(resolve, 500));
+          await new Promise((resolve) => setTimeout(resolve, 300));
           const uri = await getScreenshot(mainContentRef);
           setScreenshotUri(uri);
         } catch (error) {
@@ -793,7 +804,9 @@ export default function ArchiveScreen() {
         isUpdatePhotoPending ||
         isDrawingsLoading ||
         isDrawingsFetching ||
-        isDrawingsRefetching) && (
+        isDrawingsRefetching ||
+        isUpdateDrawingPending ||
+        isCreateDrawingPending) && (
         <View
           className="absolute inset-0 h-full w-full bg-transparent items-center justify-center z-50"
           style={{ elevation: 5 }}

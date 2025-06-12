@@ -28,7 +28,7 @@ import {
   NotoSerif_400Regular,
   NotoSerif_700Bold,
 } from "@expo-google-fonts/noto-serif";
-
+import * as WebBrowser from "expo-web-browser";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import useAuth, { AuthProvider } from "@/contexts/AuthContext";
 import { RecoilRoot } from "recoil";
@@ -40,6 +40,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const queryClient = new QueryClient();
 
+WebBrowser.maybeCompleteAuthSession();
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
 
@@ -93,6 +94,7 @@ function RootLayoutNav() {
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="(auth)" />
       <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="(memo)" />
     </Stack>
   );
 }
