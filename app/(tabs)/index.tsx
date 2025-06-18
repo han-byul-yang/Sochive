@@ -32,7 +32,7 @@ import CropPhotoModal from "@/components/Modals/CropPhotoModal";
 import FilterSelects from "@/components/FilterSelects";
 import FilteredImage from "@/components/Filters";
 import useAuth from "@/contexts/AuthContext";
-import { serverTimestamp } from "firebase/firestore";
+import { serverTimestamp, Timestamp } from "firebase/firestore";
 import { Photo } from "@/types";
 import {
   useGetPhotos,
@@ -60,6 +60,7 @@ import {
   MaterialCommunityIcons,
   MaterialIcons,
 } from "@expo/vector-icons";
+import { getDateFromTimestamp } from "@/utils/getDates";
 
 export default function ArchiveScreen() {
   const [mode, setMode] = useState<"read" | "edit">("read");
@@ -122,6 +123,8 @@ export default function ArchiveScreen() {
     selectedMonth,
     selectedYear
   );
+  const dateNow = Date.now();
+  const date = new Date();
 
   // 월 이름 가져오기 함수 추가
   const getMonthName = (month: number) => MONTHS[month - 1];
@@ -280,6 +283,8 @@ export default function ArchiveScreen() {
         const randomRotation = Math.random() * 20 - 10; // -10도 ~ 10도 회전
 
         return {
+          id: dateNow + index,
+          createdAt: date,
           uri: asset.uri,
           originalUri: asset.uri,
           width: asset.width,
@@ -439,10 +444,11 @@ export default function ArchiveScreen() {
 
           // 크기 조절 (초기 크기에 상대적인 비율로 계산)
           const scaleFactor = distance / initialDistance;
-          const newScale = Math.max(
-            0.5,
-            Math.min(2.0, dragStartRef.current.initialScale * scaleFactor)
-          );
+          // const newScale = Math.max(
+          //   0.5,
+          //   Math.min(2.0, dragStartRef.current.initialScale * scaleFactor)
+          // );
+          const newScale = dragStartRef.current.initialScale * scaleFactor;
 
           // 현재 값 업데이트
           currentRotation = newRotation;
@@ -479,7 +485,7 @@ export default function ArchiveScreen() {
   };
 
   // 사진 삭제 함수 추가
-  const handleDeletePhoto = (index: number) => {
+  const handleDeletePhoto = (id: number) => {
     // // 애니메이션 값 정리
     // if (photoAnimations[index]) {
     //   photoAnimations[index].rotation.setValue(0);
@@ -489,7 +495,10 @@ export default function ArchiveScreen() {
     // 선택된 사진 배열에서 해당 인덱스 제거
     setSelectedPhotos((prev) => {
       const newPhotos = [...prev];
-      newPhotos.splice(index, 1);
+      newPhotos.splice(
+        newPhotos.findIndex((photo) => photo.id === id),
+        1
+      );
       return newPhotos;
     });
     // 활성 사진 인덱스 초기화
@@ -526,14 +535,17 @@ export default function ArchiveScreen() {
       router.push({
         pathname: "/(memo)/memo",
         params: {
+          selectedPhotoId: selectedPhotos[index].id,
+          photoDocId: photos?.[0]?.id || "",
           selectedPhotoUri: selectedPhotos[index].originalUri,
-          selectedPhotoMemo: selectedPhotos[index]?.memo,
+          selectedPhotoCreatedAt: getDateFromTimestamp(
+            selectedPhotos[index].createdAt as unknown as Timestamp
+          ).toISOString(),
         },
       });
     }
     //setShowPhotoModal(true);
   };
-
   // 사진 자르기 핸들러
   const handleCropPhoto = () => {
     setShowCropModal(true);
@@ -1090,7 +1102,7 @@ export default function ArchiveScreen() {
                     );
                     return (
                       <View
-                        key={index}
+                        key={photo.id}
                         className="absolute"
                         style={{
                           width: width || 160,
@@ -1163,6 +1175,8 @@ export default function ArchiveScreen() {
                             isActive={isActive}
                             photoIndex={index}
                             photo={photo}
+                            width={width}
+                            height={height}
                             photoAnimations={photoAnimations}
                             panResponder={resizeRotatePanResponder}
                             onDelete={handleDeletePhoto}
@@ -1248,14 +1262,6 @@ export default function ArchiveScreen() {
           activePhotoIndex={activePhotoIndex}
           selectedPhotos={selectedPhotos}
           handleEditMemo={handleEditMemo}
-        />
-        {/* 메모 편집 모달 */}
-        <MemoEditModal
-          showMemoModal={showMemoModal}
-          setShowMemoModal={setShowMemoModal}
-          memoText={memoText}
-          setMemoText={setMemoText}
-          handleSaveMemo={handleSaveMemo}
         />
 
         {/* DrawingPalette 컴포넌트 추가 */}
