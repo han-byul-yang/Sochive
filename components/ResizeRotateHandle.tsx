@@ -9,7 +9,10 @@ interface ResizeRotateHandleProps {
     rotation: number;
     scale: number;
     zIndex: number;
+    id: number;
   };
+  width: number;
+  height: number;
   photoAnimations: {
     [key: number]: {
       rotation: Animated.Value;
@@ -24,6 +27,8 @@ export default function ResizeRotateHandle({
   isActive,
   photoIndex,
   photo,
+  width,
+  height,
   photoAnimations,
   panResponder,
   onDelete,
@@ -32,14 +37,14 @@ export default function ResizeRotateHandle({
 
   // 회전 애니메이션 보간 설정
   const rotateInterpolation =
-    photoAnimations[photoIndex]?.rotation.interpolate({
+    photoAnimations[photo.id]?.rotation.interpolate({
       inputRange: [-360, 360],
       outputRange: ["-360deg", "360deg"],
     }) || `${photo.rotation}deg`;
 
   // 크기 애니메이션 값
-  const scaleValue = photoAnimations[photoIndex]?.scale || photo.scale;
-
+  const scaleValue = photoAnimations[photo.id]?.scale || photo.scale;
+  console.log(scaleValue);
   return (
     <>
       {/* 크기 조절 및 회전 핸들 */}
@@ -50,10 +55,16 @@ export default function ResizeRotateHandle({
           transform: [
             { rotate: rotateInterpolation },
             {
-              translateX: Animated.multiply(scaleValue, 15),
+              translateX: scaleValue.interpolate({
+                inputRange: [1, 2],
+                outputRange: [1, 50],
+              }),
             },
             {
-              translateY: Animated.multiply(scaleValue, 15),
+              translateY: scaleValue.interpolate({
+                inputRange: [1, 2],
+                outputRange: [1, 50],
+              }),
             },
           ],
           zIndex: photo.zIndex + 1,
@@ -71,16 +82,22 @@ export default function ResizeRotateHandle({
             { rotate: rotateInterpolation },
             // 삭제 버튼은 오른쪽 상단에 위치하므로 translateX는 양수, translateY는 음수
             {
-              translateX: Animated.multiply(scaleValue, 15),
+              translateX: scaleValue.interpolate({
+                inputRange: [1, 2],
+                outputRange: [1, 50],
+              }),
             },
             {
-              translateY: Animated.multiply(scaleValue, -15),
+              translateY: scaleValue.interpolate({
+                inputRange: [1, 2],
+                outputRange: [1, -50],
+              }),
             },
           ],
         }}
       >
         <TouchableOpacity
-          onPress={() => onDelete && onDelete(photoIndex)}
+          onPress={() => onDelete && onDelete(photo.id)}
           className="w-8 h-8 bg-red-500/90 rounded-full items-center justify-center shadow-md"
         >
           <MaterialIcons name="delete" size={16} color="#fff" />

@@ -73,6 +73,7 @@ export default function ArchiveScreen() {
   const [activeCategory, setActiveCategory] = useState<string>("hot");
   const [selectedPhotos, setSelectedPhotos] = useState<Photo[]>([]);
   const [activePhotoIndex, setActivePhotoIndex] = useState<number | null>(null);
+  const [activePhotoId, setActivePhotoId] = useState<number | null>(null);
   const [resizeMode, setResizeMode] = useState<"none" | "resize-rotate">(
     "none"
   );
@@ -186,14 +187,14 @@ export default function ArchiveScreen() {
   // 사진이 추가될 때마다 애니메이션 값 초기화
   useEffect(() => {
     selectedPhotos.forEach((photo, index) => {
-      if (!photoAnimations[index]) {
-        photoAnimations[index] = {
+      if (!photoAnimations[photo.id]) {
+        photoAnimations[photo.id] = {
           rotation: new Animated.Value(photo.rotation),
           scale: new Animated.Value(photo.scale),
         };
       } else {
-        photoAnimations[index].rotation.setValue(photo.rotation);
-        photoAnimations[index].scale.setValue(photo.scale);
+        photoAnimations[photo.id].rotation.setValue(photo.rotation);
+        photoAnimations[photo.id].scale.setValue(photo.scale);
       }
     });
   }, [selectedPhotos.length]);
@@ -313,12 +314,13 @@ export default function ArchiveScreen() {
   });
 
   // 드래그 이벤트 처리를 위한 PanResponder 생성 함수
-  const createPanResponder = (index: number) => {
+  const createPanResponder = (index: number, id: number) => {
     return PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onPanResponderGrant: () => {
         // 드래그 시작 시 해당 사진을 최상위로 가져오기
         setActivePhotoIndex(index);
+        setActivePhotoId(id);
         setResizeMode("none");
         setSelectedPhotos((prev) => {
           const newPhotos = [...prev];
@@ -352,7 +354,7 @@ export default function ArchiveScreen() {
   };
 
   // 크기 조절 및 회전을 위한 PanResponder 생성 함수
-  const createResizeRotatePanResponder = (index: number) => {
+  const createResizeRotatePanResponder = (index: number, id: number) => {
     // 현재 회전 및 크기 값을 저장할 변수
     let currentRotation = 0;
     let currentScale = 1;
@@ -360,8 +362,10 @@ export default function ArchiveScreen() {
     return PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onPanResponderGrant: () => {
-        if (activePhotoIndex === index) {
-          const photo = selectedPhotos[index];
+        if (activePhotoId === id) {
+          const photo = selectedPhotos.find(
+            (photo) => photo.id === id
+          ) as Photo;
 
           // 현재 사진의 회전 및 크기 값 저장
           currentRotation = photo.rotation;
@@ -404,7 +408,7 @@ export default function ArchiveScreen() {
         }
       },
       onPanResponderMove: (_, gestureState) => {
-        if (activePhotoIndex === index && photoAnimations[index]) {
+        if (activePhotoId === id && photoAnimations[id]) {
           // 현재 드래그 위치
           const dragX = dragStartRef.current.x + gestureState.dx;
           const dragY = dragStartRef.current.y + gestureState.dy;
@@ -455,17 +459,20 @@ export default function ArchiveScreen() {
           currentScale = newScale;
 
           // 애니메이션 값 업데이트 - 실시간으로 UI 반영
-          photoAnimations[index].rotation.setValue(newRotation);
-          photoAnimations[index].scale.setValue(newScale);
+          photoAnimations[id].rotation.setValue(newRotation);
+          photoAnimations[id].scale.setValue(newScale);
         }
       },
       onPanResponderRelease: () => {
-        if (activePhotoIndex === index && photoAnimations[index]) {
+        if (activePhotoId === id && photoAnimations[id]) {
           // 드래그 종료 시 최종 상태 업데이트 (저장된 값 사용)
           setSelectedPhotos((prev) => {
             const newPhotos = [...prev];
-            newPhotos[index].rotation = currentRotation;
-            newPhotos[index].scale = currentScale;
+            newPhotos[
+              newPhotos.findIndex((photo) => photo.id === id)
+            ].rotation = currentRotation;
+            newPhotos[newPhotos.findIndex((photo) => photo.id === id)].scale =
+              currentScale;
             return newPhotos;
           });
 
@@ -1092,9 +1099,9 @@ export default function ArchiveScreen() {
               {selectedPhotos.length > 0 ? (
                 <View className="w-full h-full">
                   {selectedPhotos.map((photo, index) => {
-                    const panResponder = createPanResponder(index);
+                    const panResponder = createPanResponder(index, photo.id);
                     const resizeRotatePanResponder =
-                      createResizeRotatePanResponder(index);
+                      createResizeRotatePanResponder(index, photo.id);
                     const isActive = activePhotoIndex === index;
                     const { width, height } = resizeByMaxDimension(
                       photo.width || 0,
@@ -1126,7 +1133,7 @@ export default function ArchiveScreen() {
                                 {
                                   rotate:
                                     photoAnimations[
-                                      index
+                                      photo.id
                                     ]?.rotation.interpolate({
                                       inputRange: [-360, 360],
                                       outputRange: ["-360deg", "360deg"],
@@ -1134,7 +1141,7 @@ export default function ArchiveScreen() {
                                 },
                                 {
                                   scale:
-                                    photoAnimations[index]?.scale ||
+                                    photoAnimations[photo.id]?.scale ||
                                     photo.scale,
                                 },
                               ],
