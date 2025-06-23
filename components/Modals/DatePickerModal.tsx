@@ -1,10 +1,4 @@
-import {
-  Modal,
-  TouchableOpacity,
-  View,
-  Image,
-  TouchableWithoutFeedback,
-} from "react-native";
+import { Modal, TouchableOpacity, View, Image } from "react-native";
 import { ThemedText } from "../ThemedText";
 import { IconSymbol } from "../ui/IconSymbol";
 import { useMemo } from "react";

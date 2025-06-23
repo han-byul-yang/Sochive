@@ -12,6 +12,7 @@ import {
   TextInput,
   ActivityIndicator,
   TouchableWithoutFeedback,
+  Dimensions,
 } from "react-native";
 import { useState, useMemo, useRef, useEffect } from "react";
 import { IconSymbol } from "@/components/ui/IconSymbol";
@@ -61,6 +62,8 @@ import {
   MaterialIcons,
 } from "@expo/vector-icons";
 import { getDateFromTimestamp } from "@/utils/getDates";
+import StickerSelects from "@/components/StickerSelects";
+import { STICKER_CATEGORIES, SAMPLE_STICKERS } from "@/constants/Stickers";
 
 export default function ArchiveScreen() {
   const [mode, setMode] = useState<"read" | "edit">("read");
@@ -70,7 +73,7 @@ export default function ArchiveScreen() {
     null
   );
   const [resetPhotos, setResetPhotos] = useState(false);
-  const [activeCategory, setActiveCategory] = useState<string>("hot");
+  const [activeCategory, setActiveCategory] = useState<string>("lovely");
   const [selectedPhotos, setSelectedPhotos] = useState<Photo[]>([]);
   const [activePhotoIndex, setActivePhotoIndex] = useState<number | null>(null);
   const [activePhotoId, setActivePhotoId] = useState<number | null>(null);
@@ -178,15 +181,17 @@ export default function ArchiveScreen() {
   });
   useEffect(() => {
     if (resetPhotos) {
-      setSelectedPhotos(photos?.[0]?.photos || []);
+      console.log("reset");
+      const deepCopiedServerPhotos = cloneDeep(photos?.[0]?.photos || []);
+      setSelectedPhotos(deepCopiedServerPhotos);
       setSelectedBackground(photos?.[0]?.background || null);
       setResetPhotos(false);
     }
-  }, [resetPhotos]);
+  }, [resetPhotos, photos]);
 
   // 사진이 추가될 때마다 애니메이션 값 초기화
   useEffect(() => {
-    selectedPhotos.forEach((photo, index) => {
+    selectedPhotos.forEach((photo) => {
       if (!photoAnimations[photo.id]) {
         photoAnimations[photo.id] = {
           rotation: new Animated.Value(photo.rotation),
@@ -197,7 +202,7 @@ export default function ArchiveScreen() {
         photoAnimations[photo.id].scale.setValue(photo.scale);
       }
     });
-  }, [selectedPhotos.length]);
+  }, [selectedPhotos]);
 
   const handleFilterPhoto = () => {
     toggleFilterPicker(true);
@@ -284,6 +289,7 @@ export default function ArchiveScreen() {
         const randomRotation = Math.random() * 20 - 10; // -10도 ~ 10도 회전
 
         return {
+          name: "photo",
           id: dateNow + index,
           createdAt: date,
           uri: asset.uri,
@@ -314,13 +320,13 @@ export default function ArchiveScreen() {
   });
 
   // 드래그 이벤트 처리를 위한 PanResponder 생성 함수
-  const createPanResponder = (index: number, id: number) => {
+  const createPanResponder = (index: number, photo: Photo) => {
     return PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onPanResponderGrant: () => {
         // 드래그 시작 시 해당 사진을 최상위로 가져오기
         setActivePhotoIndex(index);
-        setActivePhotoId(id);
+        setActivePhotoId(photo.id);
         setResizeMode("none");
         setSelectedPhotos((prev) => {
           const newPhotos = [...prev];
@@ -348,13 +354,15 @@ export default function ArchiveScreen() {
       },
       onPanResponderRelease: () => {
         // 드래그 종료 시 activePhotoIndex를 유지
-        toggleActionSheet(true);
+        if (photo.name !== "sticker") {
+          toggleActionSheet(true);
+        }
       },
     });
   };
 
   // 크기 조절 및 회전을 위한 PanResponder 생성 함수
-  const createResizeRotatePanResponder = (index: number, id: number) => {
+  const createResizeRotatePanResponder = (id: number) => {
     // 현재 회전 및 크기 값을 저장할 변수
     let currentRotation = 0;
     let currentScale = 1;
@@ -376,9 +384,8 @@ export default function ArchiveScreen() {
           const centerY = photo.position.y + 90; // 180/2
 
           // 핸들의 위치 계산 (오른쪽 하단 코너)
-          // 현재 회전과 크기를 고려하여 핸들 위치 계산
-          const handleOffsetX = 90 * photo.scale; // 180/2 * scale
-          const handleOffsetY = 90 * photo.scale; // 180/2 * scale
+          const handleOffsetX = 90 * photo.scale;
+          const handleOffsetY = 90 * photo.scale;
 
           // 회전 각도를 라디안으로 변환
           const rotationRad = photo.rotation * (Math.PI / 180);
@@ -448,11 +455,10 @@ export default function ArchiveScreen() {
 
           // 크기 조절 (초기 크기에 상대적인 비율로 계산)
           const scaleFactor = distance / initialDistance;
-          // const newScale = Math.max(
-          //   0.5,
-          //   Math.min(2.0, dragStartRef.current.initialScale * scaleFactor)
-          // );
-          const newScale = dragStartRef.current.initialScale * scaleFactor;
+          const newScale = Math.max(
+            0.3,
+            Math.min(3.0, dragStartRef.current.initialScale * scaleFactor)
+          );
 
           // 현재 값 업데이트
           currentRotation = newRotation;
@@ -523,7 +529,7 @@ export default function ArchiveScreen() {
   };
 
   // 사진 클릭 핸들러 수정
-  const handlePhotoPress = (index: number) => {
+  const handlePhotoPress = (index: number, photo: Photo) => {
     setActivePhotoIndex(index);
     if (mode === "edit") {
       // 최대 z-index 찾기
@@ -538,15 +544,18 @@ export default function ArchiveScreen() {
 
       toggleActionSheet(true);
     } else {
+      if (photo.name === "sticker") {
+        return;
+      }
       // 읽기 모드일 때는 사진 모달만 표시
       router.push({
         pathname: "/(memo)/memo",
         params: {
-          selectedPhotoId: selectedPhotos[index].id,
+          selectedPhotoId: photo.id,
           photoDocId: photos?.[0]?.id || "",
-          selectedPhotoUri: selectedPhotos[index].originalUri,
+          selectedPhotoUri: photo.originalUri,
           selectedPhotoCreatedAt: getDateFromTimestamp(
-            selectedPhotos[index].createdAt as unknown as Timestamp
+            photo.createdAt as unknown as Timestamp
           ).toISOString(),
         },
       });
@@ -701,31 +710,6 @@ export default function ArchiveScreen() {
     setShowMemoModal(true);
   };
 
-  const handleSaveMemo = () => {
-    if (editingMemoIndex !== null) {
-      const updatedPhotos = [...selectedPhotos];
-      updatedPhotos[editingMemoIndex] = {
-        ...updatedPhotos[editingMemoIndex],
-        memo: memoText,
-      };
-      setSelectedPhotos(updatedPhotos);
-      try {
-        updatePhotoMutate({
-          photoData: {
-            photos: updatedPhotos,
-          },
-          photoId: photos?.[0]?.id || "",
-        });
-        Alert.alert("수정 완료", "메모가 성공적으로 수정되었습니다.");
-      } catch (error) {
-        console.error(error);
-        Alert.alert("수정 실패", "메모 수정 중 오류가 발생했습니다.");
-      } finally {
-        setShowMemoModal(false);
-      }
-    }
-  };
-
   const handleOriginalChange = () => {
     setOriginalUri(true);
   };
@@ -799,11 +783,27 @@ export default function ArchiveScreen() {
     }
   };
 
+  const [showStickerPicker, setShowStickerPicker] = useState(false);
+  const [selectedSticker, setSelectedSticker] = useState<string | null>(null);
+  const [activeStickerCategory, setActiveStickerCategory] =
+    useState<string>("kitschPop");
+  const stickerPickerAnim = useRef(new Animated.Value(0)).current;
+
+  const handleOpenSticker = () => {
+    const newState = !showStickerPicker;
+    setShowStickerPicker(newState);
+
+    Animated.timing(stickerPickerAnim, {
+      toValue: newState ? 1 : 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  };
+
   const handleSaveDrawing = () => {
     // 그리기 저장 로직 구현
     setShowDrawingModal(false);
   };
-
   // 상태 추가
   const [showDrawingModal, setShowDrawingModal] = useState(false);
   const [showCanvas, setShowCanvas] = useState(true);
@@ -1013,16 +1013,20 @@ export default function ArchiveScreen() {
             </TouchableOpacity>
 
             {/* Pencil Button - 새로 추가 */}
-            {/* <TouchableOpacity
-                  className="absolute right-24 bg-gray-100 p-[8px] rounded-full"
-                  activeOpacity={0.9}
-                  onPress={handleOpenPencilMode}
-                  style={{
-                    elevation: 5, // Android에서 z-index 효과를 위해 추가
-                  }}
-                >
-                  <IconSymbol name="pencil" size={24} color="#3D3D3D" />
-                </TouchableOpacity> */}
+            <TouchableOpacity
+              className="absolute right-24 bg-gray-100 p-[8px] rounded-full"
+              activeOpacity={0.9}
+              onPress={handleOpenSticker}
+              style={{
+                elevation: 5, // Android에서 z-index 효과를 위해 추가
+              }}
+            >
+              <MaterialCommunityIcons
+                name="flower-tulip"
+                size={24}
+                color="#3D3D3D"
+              />
+            </TouchableOpacity>
 
             {/* Camera Button */}
             <TouchableOpacity
@@ -1099,14 +1103,17 @@ export default function ArchiveScreen() {
               {selectedPhotos.length > 0 ? (
                 <View className="w-full h-full">
                   {selectedPhotos.map((photo, index) => {
-                    const panResponder = createPanResponder(index, photo.id);
+                    const panResponder = createPanResponder(index, photo);
                     const resizeRotatePanResponder =
-                      createResizeRotatePanResponder(index, photo.id);
+                      createResizeRotatePanResponder(photo.id);
                     const isActive = activePhotoIndex === index;
-                    const { width, height } = resizeByMaxDimension(
-                      photo.width || 0,
-                      photo.height || 0
-                    );
+                    const { width, height } =
+                      photo.name === "sticker"
+                        ? { width: 100, height: 100 }
+                        : resizeByMaxDimension(
+                            photo.width || 0,
+                            photo.height || 0
+                          );
                     return (
                       <View
                         key={photo.id}
@@ -1121,7 +1128,7 @@ export default function ArchiveScreen() {
                       >
                         <TouchableOpacity
                           activeOpacity={0.9}
-                          onPressOut={() => handlePhotoPress(index)}
+                          onPressOut={() => handlePhotoPress(index, photo)}
                         >
                           <Animated.View
                             {...(mode === "edit"
@@ -1177,13 +1184,13 @@ export default function ArchiveScreen() {
                         </TouchableOpacity>
 
                         {/* 크기 조절 및 회전 핸들 컴포넌트 - 편집 모드일 때만 표시 */}
-                        {mode === "edit" && showActionSheet && (
+                        {mode === "edit" && (
                           <ResizeRotateHandle
                             isActive={isActive}
                             photoIndex={index}
                             photo={photo}
-                            width={width}
-                            height={height}
+                            //width={width}
+                            //height={height}
                             photoAnimations={photoAnimations}
                             panResponder={resizeRotatePanResponder}
                             onDelete={handleDeletePhoto}
@@ -1291,6 +1298,19 @@ export default function ArchiveScreen() {
           visible={showDrawingModal}
           onClose={() => setShowDrawingModal(false)}
           onSave={handleSaveDrawing}
+        />
+
+        <StickerSelects
+          showStickerPicker={showStickerPicker}
+          stickerPickerAnim={stickerPickerAnim}
+          activeCategory={activeStickerCategory}
+          selectedSticker={selectedSticker}
+          collageAreaSize={collageAreaSize}
+          selectedPhotos={selectedPhotos}
+          setSelectedPhotos={setSelectedPhotos}
+          setActiveCategory={setActiveStickerCategory}
+          setSelectedSticker={setSelectedSticker}
+          toggleStickerPicker={handleOpenSticker}
         />
       </View>
     </View>

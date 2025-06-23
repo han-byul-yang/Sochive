@@ -1,6 +1,6 @@
 import { Photo } from "@/types";
 import { MaterialIcons } from "@expo/vector-icons";
-import { Modal, View, TouchableOpacity, Image, Text } from "react-native";
+import { Modal, View, TouchableOpacity, Image, Text, ScrollView } from "react-native";
 
 interface PhotoModalProps {
   showPhotoModal: boolean;
@@ -21,19 +21,19 @@ export default function PhotoModal({
     <Modal
       visible={showPhotoModal}
       transparent={true}
-      animationType="fade"
+      animationType="slide"
       onRequestClose={handleClosePhotoModal}
     >
-      <View className="flex-1 bg-black/90 justify-center items-center">
+      <View className="relative flex-1 bg-white/70 items-center border-[2px] border-gray-300 rounded-lg">
         <TouchableOpacity
           className="absolute top-10 right-5 z-10"
           onPress={handleClosePhotoModal}
         >
-          <MaterialIcons name="close" size={30} color="#fff" />
+          <MaterialIcons name="close" size={30} color="#000" />
         </TouchableOpacity>
 
         {activePhotoIndex !== null && (
-          <View className="w-full h-[85%] justify-center items-center">
+          <View className="w-full h-[85%] items-center mt-14">
             {selectedPhotos[activePhotoIndex]?.originalUri ? (
               <Image
                 source={{
@@ -51,36 +51,36 @@ export default function PhotoModal({
             )}
 
             {/* 메모 표시 영역 */}
-            <View className="w-[90%] mt-4 bg-white/10 rounded-lg p-4">
+            <View className="w-[90%] bg-white rounded-lg p-4 border-[2px] border-gray-300">
               {selectedPhotos[activePhotoIndex]?.memo ? (
                 <View>
-                  <Text className="text-white text-base font-medium mb-2">
+                  <Text className="text-gray-800 text-base font-medium mb-2">
                     메모
                   </Text>
-                  <Text className="text-white text-xl font-gaegu">
+                  <Text className="text-gray-800 text-xl font-gaegu">
                     {selectedPhotos[activePhotoIndex]?.memo}
                   </Text>
                 </View>
               ) : (
-                <Text className="text-white/70 text-sm italic">
+                <Text className="text-gray-800 text-sm italic">
                   이 사진에 대한 메모가 없습니다.
                 </Text>
               )}
 
               {/* 메모 추가/수정 버튼 */}
               <TouchableOpacity
-                className="mt-4 bg-white/20 py-2 px-4 rounded-full self-start"
+                className="mt-4 bg-gray-200 py-2 px-4 rounded-full self-start"
                 onPress={() => handleEditMemo(activePhotoIndex)}
               >
-                <Text className="text-white text-sm">
+                <Text className="text-gray-800 text-sm">
                   {selectedPhotos[activePhotoIndex]?.memo
                     ? "메모 수정"
                     : "메모 추가"}
                 </Text>
-              </TouchableOpacity>
-            </View>
+                </TouchableOpacity>
+              </View>
           </View>
-        )}
+          )}
       </View>
     </Modal>
   );

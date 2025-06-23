@@ -4,6 +4,7 @@ import { FieldValue, Timestamp } from "firebase/firestore";
 import { Point } from "react-native-gesture-handler/lib/typescript/web/interfaces";
 
 export interface Photo {
+  name: string;
   id: number;
   createdAt: Date;
   uri: string;
