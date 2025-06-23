@@ -1,5 +1,5 @@
 import { db } from "@/lib/firebase";
-import { DrawingData, Photo, PhotoData } from "@/types";
+import { DrawingData, MemoData, Photo, PhotoData } from "@/types";
 import {
   doc,
   getDoc,
@@ -87,13 +87,72 @@ export const updateDrawingStore = async (
   await updateDoc(drawingRef, drawingData);
 };
 
-export const getDrawingStore = async (userId: string, month: number, year: number) => {
+export const getDrawingStore = async (
+  userId: string,
+  month: number,
+  year: number
+) => {
   const drawingRef = collection(db, "Users", userId, "Drawings");
   const q = query(
     drawingRef,
     where("month", "==", month),
     where("year", "==", year)
   );
+  const querySnapshot = await getDocs(q);
+  return querySnapshot.docs.map((doc) => ({
+    id: doc.id,
+    ...doc.data(),
+  }));
+};
+
+export const createMemoStore = async (
+  userId: string,
+  memoData: MemoData,
+  photoDocId: string
+) => {
+  const memoRef = collection(
+    db,
+    "Users",
+    userId,
+    "Photos",
+    photoDocId,
+    "Memos"
+  );
+  await addDoc(memoRef, memoData);
+};
+
+export const updateMemoStore = async (
+  userId: string,
+  memoData: Partial<MemoData>,
+  photoDocId: string,
+  memoId: string
+) => {
+  const memoRef = doc(
+    db,
+    "Users",
+    userId,
+    "Photos",
+    photoDocId,
+    "Memos",
+    memoId
+  );
+  await updateDoc(memoRef, memoData);
+};
+
+export const getMemoStore = async (
+  userId: string,
+  photoId: string,
+  photoDocId: string
+) => {
+  const memoRef = collection(
+    db,
+    "Users",
+    userId,
+    "Photos",
+    photoDocId,
+    "Memos"
+  );
+  const q = query(memoRef, where("photoId", "==", photoId));
   const querySnapshot = await getDocs(q);
   return querySnapshot.docs.map((doc) => ({
     id: doc.id,
