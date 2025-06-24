@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -6,11 +6,13 @@ import {
   ScrollView,
   Animated,
   Image,
+  useWindowDimensions,
 } from "react-native";
 import { IconSymbol } from "@/components/ui/IconSymbol";
 import { MaterialIcons } from "@expo/vector-icons";
 import { STICKER_CATEGORIES, SAMPLE_STICKERS } from "@/constants/Stickers";
 import { Photo } from "@/types";
+import CustomBottomSheet from "./BottomSheet";
 
 interface StickerSelectsProps {
   showStickerPicker: boolean;
@@ -37,6 +39,8 @@ export default function StickerSelects({
   setSelectedSticker,
   toggleStickerPicker,
 }: StickerSelectsProps) {
+  const [currentSnapPoint, setCurrentSnapPoint] = useState(0);
+  const { height: screenHeight } = useWindowDimensions();
   const date = new Date();
   const dateNow = date.getTime();
   const centerX = collageAreaSize.width / 2 - 80;
@@ -45,6 +49,10 @@ export default function StickerSelects({
     selectedPhotos.length > 0
       ? Math.max(...selectedPhotos.map((p) => p.zIndex))
       : 0;
+  const GAP = 8;
+  const NUM_COLUMNS = 4;
+  const STICKER_SIZE =
+    (collageAreaSize.width - GAP * (NUM_COLUMNS + 1)) / NUM_COLUMNS;
 
   const handleStickerPress = (sticker: string, index: number) => {
     setSelectedSticker(sticker);
@@ -68,33 +76,20 @@ export default function StickerSelects({
   };
 
   return (
-    <Animated.View
-      className="absolute left-0 right-0 bottom-0 bg-white border-t border-gray-100"
-      style={{
-        transform: [
-          {
-            translateY: stickerPickerAnim.interpolate({
-              inputRange: [0, 1],
-              outputRange: [300, 0],
-            }),
-          },
-        ],
-        opacity: stickerPickerAnim,
-        height: showStickerPicker ? "auto" : 0,
-        zIndex: showStickerPicker ? 10 : -1,
-      }}
+    <CustomBottomSheet
+      snapPoints={["5%", "25%", "50%", "90%"]}
+      onChange={(index) => setCurrentSnapPoint(index)}
     >
-      {/* Sticker Categories */}
       <View className="flex-row items-center border-b border-gray-100">
         {/* Close Button */}
-        <TouchableOpacity
+        {/*<TouchableOpacity
           onPress={toggleStickerPicker}
           className="px-3 py-3 items-center justify-center"
         >
           <View className="bg-gray-100 rounded-full w-8 h-8 items-center justify-center">
             <IconSymbol name="chevron.down" size={20} color="#3D3D3D" />
           </View>
-        </TouchableOpacity>
+        </TouchableOpacity>*/}
 
         <ScrollView
           horizontal
@@ -131,22 +126,51 @@ export default function StickerSelects({
       </View>
 
       {/* Sticker Options */}
-      <View className="flex-row items-center">
+      <View
+        className="mt-2"
+        style={{
+          height:
+            currentSnapPoint === 2
+              ? screenHeight * 0.5 - 200
+              : screenHeight * 0.9 - 200,
+        }}
+      >
         <ScrollView
-          horizontal
+          horizontal={currentSnapPoint === 1}
           showsHorizontalScrollIndicator={false}
-          className="py-3 flex-1"
-          contentContainerStyle={{ paddingRight: 20, paddingLeft: 12 }}
+          showsVerticalScrollIndicator={true}
+          className="h-full"
+          style={{ flex: 1 }}
+          contentContainerStyle={
+            currentSnapPoint === 1
+              ? {
+                  paddingHorizontal: 8,
+                }
+              : {
+                  flexDirection: "row",
+                  flexWrap: "wrap",
+                  gap: 8,
+                  paddingHorizontal: 8,
+                }
+          }
         >
           {SAMPLE_STICKERS[activeCategory as keyof typeof SAMPLE_STICKERS]?.map(
             (sticker, index) => (
               <TouchableOpacity
                 key={`${sticker}-${index}`}
                 onPress={() => handleStickerPress(sticker, index)}
-                className="mx-2"
+                style={{
+                  width: STICKER_SIZE,
+                  height: STICKER_SIZE,
+                  marginBottom: 8,
+                }}
               >
                 <View
-                  className={`w-[80px] h-[80px] rounded-lg overflow-hidden border ${
+                  className={`${
+                    currentSnapPoint === 1
+                      ? "w-[80px] h-[80px]"
+                      : "aspect-square"
+                  } rounded-lg overflow-hidden border ${
                     selectedSticker === sticker
                       ? "border-2 border-sky-500"
                       : "border-gray-200"
@@ -163,6 +187,6 @@ export default function StickerSelects({
           )}
         </ScrollView>
       </View>
-    </Animated.View>
+    </CustomBottomSheet>
   );
 }
