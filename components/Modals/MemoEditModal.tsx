@@ -73,13 +73,6 @@ export default function MemoEditModal({
   // 열기
   const openCategoryBox = () => {
     setShowCategoryBox(true);
-    slideAnim.setValue(0);
-    pan.setValue(0);
-    Animated.timing(slideAnim, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
   };
 
   const openDatePicker = () => {
@@ -395,8 +388,6 @@ export default function MemoEditModal({
               setShowCategoryBox={setShowCategoryBox}
               category={category}
               setCategory={setCategory}
-              pan={pan}
-              slideAnim={slideAnim}
             />
           )}
 

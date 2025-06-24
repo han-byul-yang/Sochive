@@ -8,10 +8,13 @@ import {
   Text,
   PanResponder,
   Dimensions,
+  useWindowDimensions,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import Box from ".";
+import BottomSheet from "@gorhom/bottom-sheet";
+import CustomBottomSheet from "../BottomSheet";
 
 export const CATEGORIES = [
   { id: "health", name: "Health", icon: "favorite" },
@@ -51,43 +54,55 @@ interface CategorySelectsProps {
   setShowCategoryBox: React.Dispatch<React.SetStateAction<boolean>>;
   category: string;
   setCategory: React.Dispatch<React.SetStateAction<string>>;
-  pan: Animated.Value;
-  slideAnim: Animated.Value;
 }
 
 export default function CategorySelects({
   setShowCategoryBox,
   category,
   setCategory,
-  pan,
-  slideAnim,
 }: CategorySelectsProps) {
-  // 닫기
-  const closeCategoryBox = () => {
-    Animated.timing(slideAnim, {
-      toValue: 0,
-      duration: 250,
-      useNativeDriver: true,
-    }).start(() => setShowCategoryBox(false));
+  const [currentSnapPoint, setCurrentSnapPoint] = useState(1);
+  const { height: screenHeight } = useWindowDimensions();
+
+  const handlePointChange = (index: number) => {
+    setCurrentSnapPoint(index);
+    if (index === -1) {
+      setShowCategoryBox(false);
+    }
+  };
+
+  const handleCategoryPress = (category: string) => {
+    setCategory(category);
+    setShowCategoryBox(false);
   };
 
   return (
-    <>
-      {/* 배경 클릭 시 닫힘 */}
-      <Box closeBox={closeCategoryBox} pan={pan} slideAnim={slideAnim}>
-        <Text className="text-center text-lg font-bold text-gray-900 mb-6">
-          카테고리 선택
-        </Text>
+    <CustomBottomSheet
+      snapPoints={["50%", "90%"]}
+      index={0}
+      onChange={handlePointChange}
+      close
+      isBackground
+      onBackgroundPress={() => setShowCategoryBox(false)}
+    >
+      <Text className="text-center text-lg font-bold text-gray-900 mb-6">
+        카테고리 선택
+      </Text>
+      <View
+        style={{
+          height:
+            currentSnapPoint === 0
+              ? screenHeight * 0.5 - 100
+              : screenHeight * 0.9 - 100,
+        }}
+      >
         <ScrollView showsVerticalScrollIndicator={false}>
           {CATEGORIES.map((cat) => {
             const selected = category === cat.name;
             return (
               <TouchableOpacity
                 key={cat.id}
-                onPress={() => {
-                  setCategory(cat.name);
-                  closeCategoryBox();
-                }}
+                onPress={() => handleCategoryPress(cat.name)}
                 className="flex-row items-center px-4 py-3 rounded-2xl mb-3 border mx-2"
                 style={{
                   backgroundColor: selected ? SELECTED_BG : UNSELECTED_BG,
@@ -130,7 +145,7 @@ export default function CategorySelects({
             );
           })}
         </ScrollView>
-      </Box>
-    </>
+      </View>
+    </CustomBottomSheet>
   );
 }

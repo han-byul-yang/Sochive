@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useRef } from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, TouchableOpacity, Pressable } from "react-native";
 import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
 
 interface Props {
@@ -7,6 +7,9 @@ interface Props {
   snapPoints?: string[];
   index?: number;
   onChange?: (index: number) => void;
+  close?: boolean;
+  onBackgroundPress?: () => void;
+  isBackground?: boolean;
 }
 
 export default function CustomBottomSheet({
@@ -14,6 +17,9 @@ export default function CustomBottomSheet({
   snapPoints: customSnapPoints,
   index = 1,
   onChange,
+  close,
+  onBackgroundPress,
+  isBackground,
 }: Props) {
   // ref
   const bottomSheetRef = useRef<BottomSheet>(null);
@@ -32,17 +38,32 @@ export default function CustomBottomSheet({
     [onChange]
   );
 
+  const SingleBottomSheet = useMemo(() => {
+    return (
+      <BottomSheet
+        ref={bottomSheetRef}
+        index={index}
+        snapPoints={snapPoints}
+        onChange={handleSheetChanges}
+        animationConfigs={{
+          duration: 300,
+        }}
+        enablePanDownToClose={close}
+      >
+        <BottomSheetView className="flex-1">{children}</BottomSheetView>
+      </BottomSheet>
+    );
+  }, [bottomSheetRef, index, snapPoints, handleSheetChanges, close, children]);
+
   return (
-    <BottomSheet
-      ref={bottomSheetRef}
-      index={index}
-      snapPoints={snapPoints}
-      onChange={handleSheetChanges}
-      animationConfigs={{
-        duration: 300,
-      }}
-    >
-      <BottomSheetView className="flex-1">{children}</BottomSheetView>
-    </BottomSheet>
+    <>
+      {isBackground && (
+        <Pressable
+          className="flex-1 absolute bottom-0 top-0 left-0 right-0 bg-black/20"
+          onPress={onBackgroundPress}
+        />
+      )}
+      {SingleBottomSheet}
+    </>
   );
 }
