@@ -846,7 +846,9 @@ export default function DrawingModal({
             <TouchableOpacity onPress={handleCloseDrawingModal}>
               <IconSymbol name="xmark" size={24} color="#fff" />
             </TouchableOpacity>
-            <Text className="text-gray-800 text-lg font-medium">그리기</Text>
+            <Text className="text-gray-800 text-lg font-medium font-dohyeon">
+              그리기
+            </Text>
             <View className="flex-row items-center space-x-4">
               <TouchableWithoutFeedback onPress={() => {}}>
                 <TouchableOpacity
@@ -918,9 +920,11 @@ export default function DrawingModal({
                             ].blur
                           }
                           style={
-                            penStyles[
-                              path.selectedTool as keyof typeof penStyles
-                            ].option
+                            path.isEraser
+                              ? "normal"
+                              : penStyles[
+                                  path.selectedTool as keyof typeof penStyles
+                                ].option
                           }
                         />
                         <Path
@@ -932,9 +936,11 @@ export default function DrawingModal({
                                 ].style(path.currentPath)
                           }
                           strokeWidth={
-                            penStyles[
-                              path.selectedTool as keyof typeof penStyles
-                            ].path === "path2"
+                            path.isEraser
+                              ? eraserSize
+                              : penStyles[
+                                  path.selectedTool as keyof typeof penStyles
+                                ].path === "path2"
                               ? path.strokeWidth *
                                 penStyles[
                                   path.selectedTool as keyof typeof penStyles
@@ -972,9 +978,11 @@ export default function DrawingModal({
                                 ].style(path.currentPath)
                           }
                           strokeWidth={
-                            penStyles[
-                              path.selectedTool as keyof typeof penStyles
-                            ].path === "path2"
+                            path.isEraser
+                              ? eraserSize
+                              : penStyles[
+                                  path.selectedTool as keyof typeof penStyles
+                                ].path === "path2"
                               ? path.strokeWidth *
                                 penStyles[
                                   path.selectedTool as keyof typeof penStyles
@@ -1014,9 +1022,11 @@ export default function DrawingModal({
                                 ].style(path.currentPath)
                           }
                           strokeWidth={
-                            penStyles[
-                              path.selectedTool as keyof typeof penStyles
-                            ].path === "path2"
+                            path.isEraser
+                              ? eraserSize
+                              : penStyles[
+                                  path.selectedTool as keyof typeof penStyles
+                                ].path === "path2"
                               ? path.strokeWidth *
                                 penStyles[
                                   path.selectedTool as keyof typeof penStyles
@@ -1057,7 +1067,10 @@ export default function DrawingModal({
                         penStyles[selectedTool as keyof typeof penStyles].blur
                       }
                       style={
-                        penStyles[selectedTool as keyof typeof penStyles].option
+                        isEraser
+                          ? "normal"
+                          : penStyles[selectedTool as keyof typeof penStyles]
+                              .option
                       }
                     />
                     <Path
@@ -1069,8 +1082,10 @@ export default function DrawingModal({
                             ].style(currentPath) as PathDef)
                       }
                       strokeWidth={
-                        penStyles[selectedTool as keyof typeof penStyles]
-                          .path === "path2"
+                        isEraser
+                          ? eraserSize
+                          : penStyles[selectedTool as keyof typeof penStyles]
+                              .path === "path2"
                           ? getStrokeWidth() *
                             penStyles[selectedTool as keyof typeof penStyles]
                               .width1

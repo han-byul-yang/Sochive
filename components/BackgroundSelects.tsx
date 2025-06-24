@@ -54,7 +54,6 @@ export default function BackgroundSelects({
             }),
           },
         ],
-        opacity: backgroundPickerAnim,
         height: 220,
         zIndex: 10,
       }}

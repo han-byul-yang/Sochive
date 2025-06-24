@@ -9,6 +9,7 @@ import {
   Dimensions,
   StyleSheet,
   Alert,
+  SafeAreaView,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import Svg, { Path } from "react-native-svg";
@@ -27,9 +28,18 @@ import * as FileSystem from "expo-file-system";
 interface CropPhotoModalProps {
   visible: boolean;
   onClose: () => void;
-  onSave: (croppedImageUri: string) => void;
-  imageUri: string | null;
+  onSave: (
+    croppedImageUri: string,
+    touchPoints: Point[],
+    cropInfo?: { x: number; y: number; width: number; height: number }
+  ) => void;
+  imageUri?: string | null;
   onOriginalChange: () => void;
+}
+
+interface Point {
+  x: number;
+  y: number;
 }
 
 export default function CropPhotoModal({
@@ -41,6 +51,7 @@ export default function CropPhotoModal({
 }: CropPhotoModalProps) {
   const [paths, setPaths] = useState<string[]>([]);
   const [currentPath, setCurrentPath] = useState<string>("");
+  const [touchPoints, setTouchPoints] = useState<Point[]>([]);
   const [isDrawing, setIsDrawing] = useState(false);
   const [imageSize, setImageSize] = useState({ width: 0, height: 0 });
   const screenWidth = Dimensions.get("window").width;
@@ -75,6 +86,7 @@ export default function CropPhotoModal({
       calculateImageSize();
       setPaths([]);
       setCurrentPath("");
+      setTouchPoints([]);
     }
   }, [visible, imageUri]);
 
@@ -86,37 +98,23 @@ export default function CropPhotoModal({
   const panResponder = PanResponder.create({
     onStartShouldSetPanResponder: () => paths.length === 0,
     onMoveShouldSetPanResponder: () => paths.length === 0,
-    onPanResponderGrant: (evt) => {
-      if (paths.length > 0) return;
-
-      const { locationX, locationY } = evt.nativeEvent;
-
-      // 이미지 경계 내부로 제한
-      const boundedX = Math.max(0, Math.min(locationX, imageSize.width));
-      const boundedY = Math.max(0, Math.min(locationY, imageSize.height));
-
+    onPanResponderGrant: (event) => {
+      const { locationX, locationY } = event.nativeEvent;
       setIsDrawing(true);
-      setCurrentPath(`M ${boundedX} ${boundedY}`);
+      setCurrentPath(`M ${locationX} ${locationY}`);
+      setTouchPoints([{ x: locationX, y: locationY }]);
     },
-    onPanResponderMove: (evt) => {
-      if (!isDrawing || paths.length > 0) return;
-
-      const { locationX, locationY } = evt.nativeEvent;
-
-      // 이미지 경계 내부로 제한
-      const boundedX = Math.max(0, Math.min(locationX, imageSize.width));
-      const boundedY = Math.max(0, Math.min(locationY, imageSize.height));
-
-      setCurrentPath((prev) => `${prev} L ${boundedX} ${boundedY}`);
+    onPanResponderMove: (event) => {
+      if (!isDrawing) return;
+      const { locationX, locationY } = event.nativeEvent;
+      setCurrentPath((prev) => `${prev} L ${locationX} ${locationY}`);
+      setTouchPoints((prev) => [...prev, { x: locationX, y: locationY }]);
     },
     onPanResponderRelease: () => {
-      if (currentPath && paths.length === 0) {
-        // 경로 닫기 전에 마지막 점이 이미지 경계 내에 있는지 확인
-        setCurrentPath((prev) => `${prev} Z`);
-        setPaths((prev) => [...prev, currentPath + " Z"]);
-        setCurrentPath("");
+      if (currentPath) {
+        setPaths([...paths, currentPath]);
+        setIsDrawing(false);
       }
-      setIsDrawing(false);
     },
   });
 
@@ -202,7 +200,15 @@ export default function CropPhotoModal({
         encoding: FileSystem.EncodingType.Base64,
       });
 
-      onSave(filePath);
+      // 크롭 정보 저장
+      const cropInfo = {
+        x: bounds.x / imageSize.width,
+        y: bounds.y / imageSize.height,
+        width: bounds.width / imageSize.width,
+        height: bounds.height / imageSize.height,
+      };
+
+      onSave(filePath, touchPoints);
       onClose();
     } catch (error) {
       console.error("이미지 자르기 오류:", error);
@@ -212,119 +218,123 @@ export default function CropPhotoModal({
 
   return (
     <Modal visible={visible} transparent={true} animationType="slide">
-      <View className="flex-1 bg-black">
-        <View className="flex-row items-center justify-between p-4 bg-black">
-          <TouchableOpacity onPress={onClose}>
-            <MaterialIcons name="close" size={24} color="#fff" />
-          </TouchableOpacity>
-          <Text className="text-white text-lg font-medium">사진 오리기</Text>
-          <TouchableOpacity onPress={cropImage}>
-            <Text className="text-blue-400 font-medium">완료</Text>
-          </TouchableOpacity>
-        </View>
+      <SafeAreaView className="flex-1 bg-black">
+        <View className="flex-1 bg-black">
+          <View className="flex-row items-center justify-between p-4 bg-black">
+            <TouchableOpacity onPress={onClose}>
+              <MaterialIcons name="close" size={24} color="#fff" />
+            </TouchableOpacity>
+            <Text className="text-white text-lg font-medium">사진 오리기</Text>
+            <TouchableOpacity onPress={cropImage}>
+              <Text className="text-blue-400 font-medium">완료</Text>
+            </TouchableOpacity>
+          </View>
 
-        <View className="px-4 py-2">
-          <Text className="text-white text-sm text-center">
-            {paths.length === 0
-              ? "영역을 선택하려면 화면에 선을 그려주세요 (한 번만 가능)"
-              : "선택된 영역이 자르기에 사용됩니다"}
-          </Text>
-        </View>
+          <View className="px-4 py-2">
+            <Text className="text-white text-sm text-center">
+              {paths.length === 0
+                ? "영역을 선택하려면 화면에 선을 그려주세요 (한 번만 가능)"
+                : "선택된 영역이 자르기에 사용됩니다"}
+            </Text>
+          </View>
 
-        <View className="flex-1 items-center justify-center">
-          {/* 이미지와 SVG 경로 표시 */}
+          <View className="flex-1 items-center justify-center">
+            {/* 이미지와 SVG 경로 표시 */}
+            <View
+              style={{
+                width: imageSize.width,
+                height: imageSize.height,
+                position: "relative",
+              }}
+            >
+              <Image
+                source={{ uri: imageUri ?? "" }}
+                style={{ width: imageSize.width, height: imageSize.height }}
+                resizeMode="contain"
+              />
+
+              <Svg
+                style={StyleSheet.absoluteFill}
+                width={imageSize.width}
+                height={imageSize.height}
+                {...panResponder.panHandlers}
+              >
+                {paths.map((path, index) => (
+                  <Path
+                    key={`path-${index}`}
+                    d={path}
+                    stroke="#8B4513" // 갈색 선
+                    strokeWidth={5}
+                    fill="rgba(139, 69, 19, 0.3)" // 반투명 갈색 채우기
+                  />
+                ))}
+                {currentPath ? (
+                  <Path
+                    d={currentPath}
+                    stroke="#8B4513" // 갈색 선
+                    strokeWidth={5}
+                    fill="transparent"
+                  />
+                ) : null}
+              </Svg>
+            </View>
+          </View>
+
+          {/* Skia Canvas - 화면 밖에 위치시켜 보이지 않게 함 */}
           <View
             style={{
+              position: "absolute",
+              left: -9999,
+              top: -9999,
               width: imageSize.width,
               height: imageSize.height,
-              position: "relative",
             }}
           >
-            <Image
-              source={{ uri: imageUri ?? "" }}
+            <Canvas
+              ref={canvasRef}
               style={{ width: imageSize.width, height: imageSize.height }}
-              resizeMode="contain"
-            />
-
-            <Svg
-              style={StyleSheet.absoluteFill}
-              width={imageSize.width}
-              height={imageSize.height}
-              {...panResponder.panHandlers}
             >
-              {paths.map((path, index) => (
-                <Path
-                  key={`path-${index}`}
-                  d={path}
-                  stroke="#8B4513" // 갈색 선
-                  strokeWidth={5}
-                  fill="rgba(139, 69, 19, 0.3)" // 반투명 갈색 채우기
-                />
-              ))}
-              {currentPath ? (
-                <Path
-                  d={currentPath}
-                  stroke="#8B4513" // 갈색 선
-                  strokeWidth={5}
-                  fill="transparent"
-                />
-              ) : null}
-            </Svg>
+              {skiaImage && paths.length > 0 && (
+                <Group
+                  clip={Skia.Path.MakeFromSVGString(paths[0]) || undefined}
+                >
+                  <SkiaImage
+                    image={skiaImage}
+                    fit="cover"
+                    x={0}
+                    y={0}
+                    width={imageSize.width}
+                    height={imageSize.height}
+                  />
+                </Group>
+              )}
+            </Canvas>
+          </View>
+
+          <View className="flex-row items-center justify-around p-4 bg-black">
+            <TouchableOpacity
+              onPress={clearPaths}
+              className="items-center"
+              disabled={paths.length === 0}
+              style={{ opacity: paths.length === 0 ? 0.5 : 1 }}
+            >
+              <View className="w-10 h-10 bg-gray-800 rounded-full items-center justify-center mb-1">
+                <MaterialIcons name="refresh" size={20} color="#fff" />
+              </View>
+              <Text className="text-white text-xs">초기화</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleOriginalChange}
+              className="items-center"
+            >
+              <View className="w-10 h-10 bg-amber-600 rounded-full items-center justify-center mb-1">
+                <MaterialIcons name="restore" size={20} color="#fff" />
+              </View>
+              <Text className="text-white text-xs">원본</Text>
+            </TouchableOpacity>
           </View>
         </View>
-
-        {/* Skia Canvas - 화면 밖에 위치시켜 보이지 않게 함 */}
-        <View
-          style={{
-            position: "absolute",
-            left: -9999,
-            top: -9999,
-            width: imageSize.width,
-            height: imageSize.height,
-          }}
-        >
-          <Canvas
-            ref={canvasRef}
-            style={{ width: imageSize.width, height: imageSize.height }}
-          >
-            {skiaImage && paths.length > 0 && (
-              <Group clip={Skia.Path.MakeFromSVGString(paths[0]) || undefined}>
-                <SkiaImage
-                  image={skiaImage}
-                  fit="cover"
-                  x={0}
-                  y={0}
-                  width={imageSize.width}
-                  height={imageSize.height}
-                />
-              </Group>
-            )}
-          </Canvas>
-        </View>
-
-        <View className="flex-row items-center justify-around p-4 bg-black">
-          <TouchableOpacity
-            onPress={clearPaths}
-            className="items-center"
-            disabled={paths.length === 0}
-            style={{ opacity: paths.length === 0 ? 0.5 : 1 }}
-          >
-            <View className="w-10 h-10 bg-gray-800 rounded-full items-center justify-center mb-1">
-              <MaterialIcons name="refresh" size={20} color="#fff" />
-            </View>
-            <Text className="text-white text-xs">초기화</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={handleOriginalChange}
-            className="items-center"
-          >
-            <View className="w-10 h-10 bg-amber-600 rounded-full items-center justify-center mb-1">
-              <MaterialIcons name="restore" size={20} color="#fff" />
-            </View>
-            <Text className="text-white text-xs">원본</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 }

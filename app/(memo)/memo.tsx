@@ -180,10 +180,6 @@ export default function Memo() {
                 overflow: "hidden",
                 width: screenWidth,
                 height: screenWidth * 1.15,
-                shadowColor: "#000",
-                shadowOffset: { width: 0, height: 4 },
-                shadowOpacity: 0.3,
-                shadowRadius: 8,
               }}
             >
               <Image

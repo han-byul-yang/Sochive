@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useLayoutEffect, useState } from "react";
 import {
   View,
   Text,
@@ -15,8 +15,6 @@ import { Photo } from "@/types";
 import CustomBottomSheet from "./BottomSheet";
 
 interface StickerSelectsProps {
-  showStickerPicker: boolean;
-  stickerPickerAnim: Animated.Value;
   activeCategory: string;
   selectedSticker: string | null;
   collageAreaSize: { width: number; height: number };
@@ -24,12 +22,9 @@ interface StickerSelectsProps {
   setSelectedPhotos: React.Dispatch<React.SetStateAction<Photo[]>>;
   setActiveCategory: (category: string) => void;
   setSelectedSticker: (sticker: string | null) => void;
-  toggleStickerPicker: () => void;
 }
 
 export default function StickerSelects({
-  showStickerPicker,
-  stickerPickerAnim,
   activeCategory,
   selectedSticker,
   collageAreaSize,
@@ -37,9 +32,8 @@ export default function StickerSelects({
   setSelectedPhotos,
   setActiveCategory,
   setSelectedSticker,
-  toggleStickerPicker,
 }: StickerSelectsProps) {
-  const [currentSnapPoint, setCurrentSnapPoint] = useState(0);
+  const [currentSnapPoint, setCurrentSnapPoint] = useState(1);
   const { height: screenHeight } = useWindowDimensions();
   const date = new Date();
   const dateNow = date.getTime();
@@ -53,6 +47,11 @@ export default function StickerSelects({
   const NUM_COLUMNS = 4;
   const STICKER_SIZE =
     (collageAreaSize.width - GAP * (NUM_COLUMNS + 1)) / NUM_COLUMNS;
+  const [stickerSize, setStickerSize] = useState(80);
+
+  useLayoutEffect(() => {
+    setStickerSize(80);
+  }, [collageAreaSize]);
 
   const handleStickerPress = (sticker: string, index: number) => {
     setSelectedSticker(sticker);
@@ -145,6 +144,7 @@ export default function StickerSelects({
             currentSnapPoint === 1
               ? {
                   paddingHorizontal: 8,
+                  gap: 8,
                 }
               : {
                   flexDirection: "row",
@@ -160,17 +160,13 @@ export default function StickerSelects({
                 key={`${sticker}-${index}`}
                 onPress={() => handleStickerPress(sticker, index)}
                 style={{
-                  width: STICKER_SIZE,
-                  height: STICKER_SIZE,
+                  width: currentSnapPoint === 1 ? stickerSize : STICKER_SIZE,
+                  height: currentSnapPoint === 1 ? stickerSize : STICKER_SIZE,
                   marginBottom: 8,
                 }}
               >
                 <View
-                  className={`${
-                    currentSnapPoint === 1
-                      ? "w-[80px] h-[80px]"
-                      : "aspect-square"
-                  } rounded-lg overflow-hidden border ${
+                  className={`aspect-square rounded-lg overflow-hidden border ${
                     selectedSticker === sticker
                       ? "border-2 border-sky-500"
                       : "border-gray-200"
