@@ -14,6 +14,7 @@ import {
   Platform,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import CategorySelects, {
   CATEGORIES,
   CategoryIconName,
@@ -186,9 +187,12 @@ export default function MemoEditModal({
       animationType="slide"
       presentationStyle="formSheet"
     >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={{ flex: 1 }}
+      <KeyboardAwareScrollView
+        keyboardShouldPersistTaps="handled"
+        contentContainerStyle={{ flexGrow: 1 }}
+        extraScrollHeight={100}
+        enableAutomaticScroll={true}
+        bounces={false}
       >
         <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
           {/* Modal Header */}
@@ -407,7 +411,7 @@ export default function MemoEditModal({
             />
           )}
         </SafeAreaView>
-      </KeyboardAvoidingView>
+      </KeyboardAwareScrollView>
     </Modal>
   );
 }
