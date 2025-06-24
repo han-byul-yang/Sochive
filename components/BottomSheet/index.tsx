@@ -38,6 +38,9 @@ export default function CustomBottomSheet({
       index={index}
       snapPoints={snapPoints}
       onChange={handleSheetChanges}
+      animationConfigs={{
+        duration: 300,
+      }}
     >
       <BottomSheetView className="flex-1">{children}</BottomSheetView>
     </BottomSheet>

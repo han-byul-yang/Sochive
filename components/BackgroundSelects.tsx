@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   View,
   Text,
@@ -6,9 +6,10 @@ import {
   ScrollView,
   Animated,
   Image,
+  Easing,
 } from "react-native";
 import { IconSymbol } from "@/components/ui/IconSymbol";
-import { Feather } from "@expo/vector-icons";
+import { Feather, MaterialIcons } from "@expo/vector-icons";
 import {
   BACKGROUND_CATEGORIES,
   SAMPLE_BACKGROUNDS,
@@ -33,6 +34,14 @@ export default function BackgroundSelects({
   setSelectedBackground,
   toggleBackgroundPicker,
 }: BackgroundSelectsProps) {
+  useEffect(() => {
+    Animated.timing(backgroundPickerAnim, {
+      toValue: showBackgroundPicker ? 1 : 0,
+      duration: 300,
+      useNativeDriver: true,
+    }).start();
+  }, [showBackgroundPicker]);
+
   return (
     <Animated.View
       className="absolute left-0 right-0 bottom-0 bg-white border-t border-gray-100"
@@ -46,8 +55,8 @@ export default function BackgroundSelects({
           },
         ],
         opacity: backgroundPickerAnim,
-        height: showBackgroundPicker ? "auto" : 0,
-        zIndex: showBackgroundPicker ? 10 : -1,
+        height: 220,
+        zIndex: 10,
       }}
     >
       {/* Background Categories */}
@@ -77,7 +86,7 @@ export default function BackgroundSelects({
                   : "bg-transparent"
               }`}
             >
-              <IconSymbol
+              <MaterialIcons
                 name={category.icon as any}
                 size={18}
                 color={activeCategory === category.id ? "#3D3D3D" : "#9E9E9E"}
@@ -105,7 +114,7 @@ export default function BackgroundSelects({
           contentContainerStyle={{ paddingRight: 20, paddingLeft: 12 }}
         >
           {/* Original (No Background) Option */}
-          <TouchableOpacity
+          {/* <TouchableOpacity
             onPress={() => setSelectedBackground(null)}
             className="mx-2"
           >
@@ -129,7 +138,7 @@ export default function BackgroundSelects({
                 <Feather name="check" size={16} color="#fff" />
               )}
             </View>
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
           {/* Background Options */}
           {SAMPLE_BACKGROUNDS[

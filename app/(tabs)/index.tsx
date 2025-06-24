@@ -217,6 +217,7 @@ export default function ArchiveScreen() {
     setMode(mode === "edit" ? "read" : "edit");
     if (mode === "edit") {
       setShowActionSheet(false);
+      setShowStickerPicker(false);
     }
   };
 
@@ -247,6 +248,7 @@ export default function ArchiveScreen() {
 
   // 배경 선택기 토글
   const toggleBackgroundPicker = () => {
+    setShowStickerPicker(false);
     const newState = !showBackgroundPicker;
     setShowBackgroundPicker(newState);
 
@@ -259,6 +261,7 @@ export default function ArchiveScreen() {
 
   // 사진 선택 함수 수정
   const handlePickImages = async () => {
+    setShowStickerPicker(false);
     const result = await pickMultipleImages();
 
     if (result && !result.canceled && result.assets.length > 0) {
@@ -1109,7 +1112,7 @@ export default function ArchiveScreen() {
                     const isActive = activePhotoIndex === index;
                     const { width, height } =
                       photo.name === "sticker"
-                        ? { width: 100, height: 100 }
+                        ? { width: 80, height: 80 }
                         : resizeByMaxDimension(
                             photo.width || 0,
                             photo.height || 0
@@ -1300,18 +1303,17 @@ export default function ArchiveScreen() {
           onSave={handleSaveDrawing}
         />
 
-        <StickerSelects
-          showStickerPicker={showStickerPicker}
-          stickerPickerAnim={stickerPickerAnim}
-          activeCategory={activeStickerCategory}
-          selectedSticker={selectedSticker}
-          collageAreaSize={collageAreaSize}
-          selectedPhotos={selectedPhotos}
-          setSelectedPhotos={setSelectedPhotos}
-          setActiveCategory={setActiveStickerCategory}
-          setSelectedSticker={setSelectedSticker}
-          toggleStickerPicker={handleOpenSticker}
-        />
+        {showStickerPicker && (
+          <StickerSelects
+            activeCategory={activeStickerCategory}
+            selectedSticker={selectedSticker}
+            collageAreaSize={collageAreaSize}
+            selectedPhotos={selectedPhotos}
+            setSelectedPhotos={setSelectedPhotos}
+            setActiveCategory={setActiveStickerCategory}
+            setSelectedSticker={setSelectedSticker}
+          />
+        )}
       </View>
     </View>
   );
