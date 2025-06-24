@@ -64,6 +64,7 @@ import {
 import { getDateFromTimestamp } from "@/utils/getDates";
 import StickerSelects from "@/components/StickerSelects";
 import { STICKER_CATEGORIES, SAMPLE_STICKERS } from "@/constants/Stickers";
+import PhotoActionButton from "@/components/PhotoActionButton";
 
 export default function ArchiveScreen() {
   const [mode, setMode] = useState<"read" | "edit">("read");
@@ -907,7 +908,7 @@ export default function ArchiveScreen() {
                         isSaving || selectedPhotos.length === 0 ? 0.5 : 1,
                     }}
                   >
-                    <Text className="text-white font-medium">
+                    <Text className="text-white font-medium font-dohyeon">
                       {isSaving ? "저장 중..." : "저장"}
                     </Text>
                   </TouchableOpacity>
@@ -1127,6 +1128,10 @@ export default function ArchiveScreen() {
                           left: photo.position.x,
                           top: photo.position.y,
                           zIndex: photo.zIndex,
+                          shadowColor: "#000",
+                          shadowOffset: { width: 2, height: 2 },
+                          shadowOpacity: 0.6,
+                          shadowRadius: 3,
                         }}
                       >
                         <TouchableOpacity
@@ -1163,10 +1168,6 @@ export default function ArchiveScreen() {
                                   : 0,
                               borderColor: "#6C4E31",
                               borderRadius: 8,
-                              shadowColor: "#000",
-                              shadowOffset: { width: 0, height: 2 },
-                              shadowOpacity: 0.8,
-                              shadowRadius: 3.84,
                             }}
                           >
                             {photo.filter ? (
@@ -1227,6 +1228,13 @@ export default function ArchiveScreen() {
           toggleBackgroundPicker={toggleBackgroundPicker}
         />
 
+        {/* Photo Action Button */}
+        <PhotoActionButton
+          visible={showActionSheet && mode === "edit"}
+          actionAnim={actionSheetAnim}
+          onPress={handleCropPhoto}
+        />
+
         {/* Date Picker Modal */}
         <DatePickerModal
           showDatePicker={showDatePicker}
@@ -1236,15 +1244,6 @@ export default function ArchiveScreen() {
           selectedMonth={selectedMonth}
           setSelectedMonth={setSelectedMonth}
           setMode={setMode}
-        />
-
-        {/* Photo Action Sheet */}
-        <PhotoActionSheet
-          visible={showActionSheet}
-          actionSheetAnim={actionSheetAnim}
-          onCrop={handleCropPhoto}
-          onFilter={handleFilterPhoto}
-          onClose={() => toggleActionSheet(false)}
         />
 
         {/* CropPhotoModal 추가 */}
@@ -1263,15 +1262,15 @@ export default function ArchiveScreen() {
         />
 
         {/* Filter Selector Component */}
-        <FilterSelects
-          showFilterPicker={showFilterPicker}
-          filterPickerAnim={filterPickerAnim}
-          activeCategory={activeFilterCategory}
-          selectedFilter={selectedFilter}
-          setActiveCategory={setActiveFilterCategory}
-          toggleFilterPicker={toggleFilterPicker}
-          onApplyFilter={applyFilter}
-        />
+        {/*<FilterSelects
+            showFilterPicker={showFilterPicker}
+            filterPickerAnim={filterPickerAnim}
+            activeCategory={activeFilterCategory}
+            selectedFilter={selectedFilter}
+            setActiveCategory={setActiveFilterCategory}
+            toggleFilterPicker={toggleFilterPicker}
+            onApplyFilter={applyFilter}
+          />*/}
 
         <PhotoModal
           showPhotoModal={showPhotoModal}
