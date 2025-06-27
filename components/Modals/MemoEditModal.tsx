@@ -385,33 +385,33 @@ export default function MemoEditModal({
             {/* 하단 여백 */}
             <View className="h-6" />
           </ScrollView>
-
-          {/* 하단 카테고리 박스 */}
-          {showCategoryBox && (
-            <CategorySelects
-              setShowCategoryBox={setShowCategoryBox}
-              category={category}
-              setCategory={setCategory}
-            />
-          )}
-
-          {/* 날짜 선택 하단 모달 */}
-          {showDatePicker && (
-            <DateSelect
-              setShowDatePicker={setShowDatePicker}
-              pan={pan}
-              slideAnim={slideAnim}
-              tempYear={tempYear}
-              setTempYear={setTempYear}
-              tempMonth={tempMonth}
-              setTempMonth={setTempMonth}
-              tempDay={tempDay}
-              setTempDay={setTempDay}
-              setSelectedDate={setSelectedDate}
-            />
-          )}
         </SafeAreaView>
       </KeyboardAwareScrollView>
+
+      {/* 하단 카테고리 박스 */}
+      {showCategoryBox && (
+        <CategorySelects
+          setShowCategoryBox={setShowCategoryBox}
+          category={category}
+          setCategory={setCategory}
+        />
+      )}
+
+      {/* 날짜 선택 하단 모달 */}
+      {showDatePicker && (
+        <DateSelect
+          setShowDatePicker={setShowDatePicker}
+          pan={pan}
+          slideAnim={slideAnim}
+          tempYear={tempYear}
+          setTempYear={setTempYear}
+          tempMonth={tempMonth}
+          setTempMonth={setTempMonth}
+          tempDay={tempDay}
+          setTempDay={setTempDay}
+          setSelectedDate={setSelectedDate}
+        />
+      )}
     </Modal>
   );
 }

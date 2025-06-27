@@ -41,7 +41,6 @@ import {
   useUpdatePhoto,
 } from "@/hooks/useGetPhotos";
 import PhotoModal from "@/components/Modals/PhotoModal";
-import MemoEditModal from "@/components/Modals/MemoEditModal";
 import { cloneDeep, isEqual } from "lodash";
 import { resizeByMaxDimension } from "@/utils/photoManipulation";
 import { captureRef } from "react-native-view-shot";
