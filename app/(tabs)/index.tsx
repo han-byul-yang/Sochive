@@ -1183,6 +1183,7 @@ export default function ArchiveScreen() {
                           <ResizeRotateHandle
                             photo={photo}
                             isActive={isActive}
+                            onDelete={() => handleDeletePhoto(photo.id)}
                             onUpdate={(rotation, scale) =>
                               handleResizeRotateUpdate(
                                 photo.id,

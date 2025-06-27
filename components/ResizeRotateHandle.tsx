@@ -1,5 +1,11 @@
 import React, { useEffect, useRef, useState } from "react";
-import { View, PanResponder, Animated, Dimensions } from "react-native";
+import {
+  View,
+  PanResponder,
+  Animated,
+  Dimensions,
+  TouchableOpacity,
+} from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Photo } from "@/types";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -9,12 +15,14 @@ interface Props {
   photo: Photo;
   isActive: boolean;
   onUpdate: (rotation: number, scale: number) => void;
+  onDelete: () => void;
 }
 
 export default function ResizeRotateHandle({
   photo,
   isActive,
   onUpdate,
+  onDelete,
 }: Props) {
   if (!isActive) return null;
   const { top: topInset } = useSafeAreaInsets();
@@ -82,17 +90,34 @@ export default function ResizeRotateHandle({
   });
 
   return (
-    <View
-      {...panResponder.panHandlers}
-      style={{
-        position: "absolute",
-        right: -12,
-        bottom: -12,
-      }}
-    >
-      <View className="bg-white rounded-full p-2 shadow-lg">
-        <MaterialCommunityIcons name="arrow-all" size={20} color="#3D3D3D" />
+    <>
+      <View
+        {...panResponder.panHandlers}
+        style={{
+          position: "absolute",
+          right: -12,
+          bottom: -12,
+        }}
+      >
+        <View className="bg-white rounded-full p-2 shadow-lg">
+          <MaterialCommunityIcons name="arrow-all" size={20} color="#3D3D3D" />
+        </View>
       </View>
-    </View>
+      <View
+        {...panResponder.panHandlers}
+        style={{
+          position: "absolute",
+          top: -12,
+          right: -12,
+        }}
+      >
+        <TouchableOpacity
+          className="bg-red-700 rounded-full p-2 shadow-lg"
+          onPress={onDelete}
+        >
+          <MaterialCommunityIcons name="delete" size={20} color="#FFFFFF" />
+        </TouchableOpacity>
+      </View>
+    </>
   );
 }
