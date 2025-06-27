@@ -31,8 +31,16 @@ const COLORS = [
 ];
 
 const PEN_TYPES = [
-  { id: "normal", icon: "create", label: "기본" },
-  { id: "dot", icon: "blur-on", label: "점선" },
+  {
+    id: "normal",
+    icon: "create",
+    label: "기본",
+  },
+  {
+    id: "dot",
+    icon: "blur-on",
+    label: "점선",
+  },
   { id: "brush", icon: "brush", label: "브러시" },
   { id: "neon", icon: "lightbulb-outline", label: "네온" },
 ];

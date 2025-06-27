@@ -772,8 +772,8 @@ export default function ArchiveScreen() {
 
   const handleOpenPencilMode = async () => {
     if (mode === "read") {
-      //setMode("read");
       setIsClickedPencil(true);
+      //setMode("read");
     } else {
       Alert.alert("읽기 모드에서만 그리기 모드를 열 수 있습니다.");
     }
@@ -1198,7 +1198,7 @@ export default function ArchiveScreen() {
                   })}
                 </View>
               ) : (
-                <View className="items-center justify-center p-8 h-full bg-red-500">
+                <View className="items-center justify-center p-8 h-full">
                   <ThemedText className="text-gray-400">
                     {mode === "edit"
                       ? "사진을 추가하여 콜라주를 만들어보세요"

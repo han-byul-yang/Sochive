@@ -55,63 +55,54 @@ export type PenTipStyle = "round" | "square" | "butt";
 const TOOLS = [
   {
     id: "zigzag",
-    icon: "https://res.cloudinary.com/ddcuocopj/image/upload/v1749574968/085d590a-3a24-429f-8d1d-37eb6c472648_d5kpj2.png",
+    icon: "https://res.cloudinary.com/ddcuocopj/image/upload/v1751029352/IMG_01141_kc41xs.jpg",
     label: "지그재그",
-    width: 2,
   },
   {
     id: "smokeNormal",
-    icon: "https://res.cloudinary.com/ddcuocopj/image/upload/v1749574970/96bfbeaa-18f9-4b18-80c6-fcbe2c5abc5a_fopbsl.png",
+    icon: "https://res.cloudinary.com/ddcuocopj/image/upload/v1751029352/IMG_01142_ckbtnt.jpg",
     label: "연기",
-    width: 8,
   },
   {
     id: "smokeSolid",
-    icon: "https://res.cloudinary.com/ddcuocopj/image/upload/v1749574970/96bfbeaa-18f9-4b18-80c6-fcbe2c5abc5a_fopbsl.png",
+    icon: "https://res.cloudinary.com/ddcuocopj/image/upload/v1751029352/IMG_01143_ly8rv4.jpg",
     label: "연기 굵게",
-    width: 4,
   },
   {
     id: "smokeInner",
-    icon: "https://res.cloudinary.com/ddcuocopj/image/upload/v1749574970/96bfbeaa-18f9-4b18-80c6-fcbe2c5abc5a_fopbsl.png",
+    icon: "https://res.cloudinary.com/ddcuocopj/image/upload/v1751030124/IMG_01144_prtaff.jpg",
     label: "연기 안쪽",
-    width: 4,
   },
   {
     id: "smokeOuter",
-    icon: "https://res.cloudinary.com/ddcuocopj/image/upload/v1749574970/96bfbeaa-18f9-4b18-80c6-fcbe2c5abc5a_fopbsl.png",
+    icon: "https://res.cloudinary.com/ddcuocopj/image/upload/v1751030123/IMG_01145_ewfuuw.jpg",
     label: "연기 바깥쪽",
-    width: 4,
   },
-  {
-    id: "wave",
-    icon: "https://res.cloudinary.com/ddcuocopj/image/upload/v1749574970/96bfbeaa-18f9-4b18-80c6-fcbe2c5abc5a_fopbsl.png",
-    label: "파도",
-    width: 4,
-  },
+  // {
+  //   id: "wave",
+  //   icon: "https://res.cloudinary.com/ddcuocopj/image/upload/v1751030123/IMG_01146_jfr7fi.jpg",
+  //   label: "파도",
+  //   width: 4,
+  // },
   {
     id: "doubleLine",
-    icon: "https://res.cloudinary.com/ddcuocopj/image/upload/v1749574970/96bfbeaa-18f9-4b18-80c6-fcbe2c5abc5a_fopbsl.png",
+    icon: "https://res.cloudinary.com/ddcuocopj/image/upload/v1751030123/IMG_01146_jfr7fi.jpg",
     label: "두줄",
-    width: 4,
   },
   {
     id: "outlineWhite",
-    icon: "https://res.cloudinary.com/ddcuocopj/image/upload/v1749574970/96bfbeaa-18f9-4b18-80c6-fcbe2c5abc5a_fopbsl.png",
+    icon: "https://res.cloudinary.com/ddcuocopj/image/upload/v1751031587/KakaoTalk_20250627_223913543_xtzhll.jpg",
     label: "흰 테두리",
-    width: 4,
   },
   {
     id: "outlineColorThin",
-    icon: "https://res.cloudinary.com/ddcuocopj/image/upload/v1749574970/96bfbeaa-18f9-4b18-80c6-fcbe2c5abc5a_fopbsl.png",
+    icon: "https://res.cloudinary.com/ddcuocopj/image/upload/v1751030123/IMG_01147_yqcdzx.jpg",
     label: "얇은 색 테두리",
-    width: 4,
   },
   {
     id: "outlineColorThick",
-    icon: "https://res.cloudinary.com/ddcuocopj/image/upload/v1749574970/96bfbeaa-18f9-4b18-80c6-fcbe2c5abc5a_fopbsl.png",
+    icon: "https://res.cloudinary.com/ddcuocopj/image/upload/v1751030123/IMG_01148_flsbyf.jpg",
     label: "굵은 색 테두리",
-    width: 4,
   },
 ];
 
@@ -124,13 +115,6 @@ const COLORS = [
   "#9370DB",
   "#20B2AA",
   "#FF4500",
-];
-
-const SIZES = [
-  { id: "xs", size: 2, label: "얇게" },
-  { id: "sm", size: 4, label: "보통" },
-  { id: "md", size: 6, label: "굵게" },
-  { id: "lg", size: 8, label: "매우 굵게" },
 ];
 
 const PEN_TIP_STYLES = [
@@ -690,31 +674,29 @@ export default function DrawingModal({
   const getStrokeWidth = () => {
     switch (selectedTool) {
       case "zigzag":
-        return penSize * 0.5;
+        return penSize * 0.6;
       case "spray":
-        return penSize;
+        return penSize * 0.6;
       case "dot":
-        return penSize * 1.5;
+        return penSize * 0.6;
       case "smokeNormal":
-        return penSize * 2;
+        return penSize * 0.6;
       case "smokeSolid":
-        return penSize * 2;
+        return penSize * 0.6;
       case "smokeInner":
-        return penSize * 2;
+        return penSize * 0.6;
       case "smokeOuter":
-        return penSize * 2;
-      case "wave":
-        return penSize;
+        return penSize * 0.6;
       case "doubleLine":
-        return penSize;
+        return penSize * 0.2;
       case "outlineWhite":
-        return penSize;
+        return penSize * 0.6;
       case "outlineColorThin":
-        return penSize;
+        return penSize * 0.2;
       case "outlineColorThick":
-        return penSize;
+        return penSize * 0.2;
       default:
-        return penSize;
+        return penSize * 0.6;
     }
   };
 
@@ -1223,18 +1205,18 @@ export default function DrawingModal({
                   activeOpacity={0.5}
                   key={tool.id}
                   onPress={() => handleToolSelect(tool.id)}
-                  className="items-center mr-4"
+                  className="items-center mr-[14px]"
                 >
                   <View
                     className={`py-[2px] px-[2px] rounded-sm items-center justify-center flex-row space-x-2 ${
-                      selectedTool === tool.id ? "bg-[#1c1e1c]" : "bg-slate-100"
+                      selectedTool === tool.id ? "bg-[#292b29]" : ""
                     }`}
                   >
                     <Image
                       source={{
                         uri: (tool.icon as any) || "",
                       }}
-                      className="w-8 h-12"
+                      className="w-[34px] h-[50px]"
                     />
                   </View>
                 </TouchableOpacity>
