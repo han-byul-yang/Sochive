@@ -1,108 +1,98 @@
-import React from "react";
-import { Animated, PanResponder, TouchableOpacity, View } from "react-native";
-import { MaterialIcons } from "@expo/vector-icons";
+import React, { useEffect, useRef, useState } from "react";
+import { View, PanResponder, Animated, Dimensions } from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { Photo } from "@/types";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { resizeByMaxDimension } from "@/utils/photoManipulation";
 
-interface ResizeRotateHandleProps {
+interface Props {
+  photo: Photo;
   isActive: boolean;
-  photoIndex: number;
-  photo: {
-    rotation: number;
-    scale: number;
-    zIndex: number;
-    id: number;
-  };
-  width: number;
-  height: number;
-  photoAnimations: {
-    [key: number]: {
-      rotation: Animated.Value;
-      scale: Animated.Value;
-    };
-  };
-  panResponder: any;
-  onDelete?: (index: number) => void;
+  onUpdate: (rotation: number, scale: number) => void;
 }
 
 export default function ResizeRotateHandle({
-  isActive,
-  photoIndex,
   photo,
-  width,
-  height,
-  photoAnimations,
-  panResponder,
-  onDelete,
-}: ResizeRotateHandleProps) {
+  isActive,
+  onUpdate,
+}: Props) {
   if (!isActive) return null;
+  const { top: topInset } = useSafeAreaInsets();
+  const { width, height } =
+    photo.name === "sticker"
+      ? { width: 80, height: 80 }
+      : resizeByMaxDimension(photo.width || 0, photo.height || 0);
 
-  // 회전 애니메이션 보간 설정
-  const rotateInterpolation =
-    photoAnimations[photo.id]?.rotation.interpolate({
-      inputRange: [-360, 360],
-      outputRange: ["-360deg", "360deg"],
-    }) || `${photo.rotation}deg`;
+  const startRotation = useRef(0);
+  const startScale = useRef(1);
+  const lastRotation = useRef(photo.rotation || 0);
+  const lastScale = useRef(photo.scale || 1);
 
-  // 크기 애니메이션 값
-  const scaleValue = photoAnimations[photo.id]?.scale || photo.scale;
-  console.log(scaleValue);
+  const panResponder = PanResponder.create({
+    onStartShouldSetPanResponder: () => true,
+    onPanResponderGrant: (_, gesture) => {
+      const centerX = photo.position.x + width / 2;
+      const centerY = photo.position.y + height / 2;
+
+      startRotation.current =
+        Math.atan2(gesture.y0 - topInset - 60 - centerY, gesture.x0 - centerX) *
+        (180 / Math.PI);
+
+      lastRotation.current = photo.rotation || 0;
+      lastScale.current = photo.scale || 1;
+
+      const dx = gesture.x0 - centerX;
+      const dy = gesture.y0 - topInset - 60 - centerY;
+      startScale.current = Math.sqrt(dx * dx + dy * dy);
+    },
+    onPanResponderMove: (_, gesture) => {
+      const centerX = photo.position.x + width / 2;
+      const centerY = photo.position.y + height / 2;
+
+      // 회전 계산 - 즉각적인 반응을 위해 직접 각도 차이 사용
+      const currentAngle =
+        Math.atan2(
+          gesture.moveY - topInset - 60 - centerY,
+          gesture.moveX - centerX
+        ) *
+        (180 / Math.PI);
+
+      const deltaAngle = currentAngle - startRotation.current;
+      const newRotation = lastRotation.current + deltaAngle; // 회전 속도 2배 증가
+
+      // 크기 계산 - 더 민감한 반응을 위해 계산 방식 변경
+      const dx = gesture.moveX - centerX;
+      const dy = gesture.moveY - topInset - 60 - centerY;
+      const currentScale = Math.sqrt(dx * dx + dy * dy);
+      const scaleFactor = currentScale / startScale.current;
+
+      // 크기 변화를 더 극적으로 만들기
+      const scaleMultiplier = 1; // 크기 변화 3배 증가
+      const newScale = Math.min(
+        Math.max(
+          lastScale.current * Math.pow(scaleFactor, scaleMultiplier),
+          0.2
+        ),
+        4.0
+      );
+
+      // 즉시 업데이트
+      onUpdate(newRotation, newScale);
+    },
+  });
+
   return (
-    <>
-      {/* 크기 조절 및 회전 핸들 */}
-      <Animated.View
-        {...panResponder.panHandlers}
-        className="absolute bottom-0 right-0 w-8 h-8 bg-white/80 rounded-full items-center justify-center shadow-md"
-        style={{
-          transform: [
-            { rotate: rotateInterpolation },
-            {
-              translateX: scaleValue.interpolate({
-                inputRange: [1, 2],
-                outputRange: [1, 50],
-              }),
-            },
-            {
-              translateY: scaleValue.interpolate({
-                inputRange: [1, 2],
-                outputRange: [1, 50],
-              }),
-            },
-          ],
-          zIndex: photo.zIndex + 1,
-        }}
-      >
-        <MaterialIcons name="open-with" size={16} color="#3498db" />
-      </Animated.View>
-
-      {/* 삭제 버튼 */}
-      <Animated.View
-        className="absolute top-0 right-0"
-        style={{
-          zIndex: photo.zIndex + 1,
-          transform: [
-            { rotate: rotateInterpolation },
-            // 삭제 버튼은 오른쪽 상단에 위치하므로 translateX는 양수, translateY는 음수
-            {
-              translateX: scaleValue.interpolate({
-                inputRange: [1, 2],
-                outputRange: [1, 50],
-              }),
-            },
-            {
-              translateY: scaleValue.interpolate({
-                inputRange: [1, 2],
-                outputRange: [1, -50],
-              }),
-            },
-          ],
-        }}
-      >
-        <TouchableOpacity
-          onPress={() => onDelete && onDelete(photo.id)}
-          className="w-8 h-8 bg-red-500/90 rounded-full items-center justify-center shadow-md"
-        >
-          <MaterialIcons name="delete" size={16} color="#fff" />
-        </TouchableOpacity>
-      </Animated.View>
-    </>
+    <View
+      {...panResponder.panHandlers}
+      style={{
+        position: "absolute",
+        right: -12,
+        bottom: -12,
+      }}
+    >
+      <View className="bg-white rounded-full p-2 shadow-lg">
+        <MaterialCommunityIcons name="arrow-all" size={20} color="#3D3D3D" />
+      </View>
+    </View>
   );
 }

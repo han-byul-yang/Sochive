@@ -65,6 +65,7 @@ import { getDateFromTimestamp } from "@/utils/getDates";
 import StickerSelects from "@/components/StickerSelects";
 import { STICKER_CATEGORIES, SAMPLE_STICKERS } from "@/constants/Stickers";
 import PhotoActionButton from "@/components/PhotoActionButton";
+import ResizeRotateHandle2 from "@/components/ResizeRotateHandle2";
 
 export default function ArchiveScreen() {
   const [mode, setMode] = useState<"read" | "edit">("read");
@@ -191,19 +192,19 @@ export default function ArchiveScreen() {
   }, [resetPhotos, photos]);
 
   // 사진이 추가될 때마다 애니메이션 값 초기화
-  useEffect(() => {
-    selectedPhotos.forEach((photo) => {
-      if (!photoAnimations[photo.id]) {
-        photoAnimations[photo.id] = {
-          rotation: new Animated.Value(photo.rotation),
-          scale: new Animated.Value(photo.scale),
-        };
-      } else {
-        photoAnimations[photo.id].rotation.setValue(photo.rotation);
-        photoAnimations[photo.id].scale.setValue(photo.scale);
-      }
-    });
-  }, [selectedPhotos]);
+  // useEffect(() => {
+  //   selectedPhotos.forEach((photo) => {
+  //     if (!photoAnimations[photo.id]) {
+  //       photoAnimations[photo.id] = {
+  //         rotation: new Animated.Value(photo.rotation),
+  //         scale: new Animated.Value(photo.scale),
+  //       };
+  //     } else {
+  //       photoAnimations[photo.id].rotation.setValue(photo.rotation);
+  //       photoAnimations[photo.id].scale.setValue(photo.scale);
+  //     }
+  //   });
+  // }, [selectedPhotos]);
 
   const handleFilterPhoto = () => {
     toggleFilterPicker(true);
@@ -268,7 +269,7 @@ export default function ArchiveScreen() {
     if (result && !result.canceled && result.assets.length > 0) {
       const centerX = collageAreaSize.width / 2 - 80; // 사진 너비의 절반
       const centerY = collageAreaSize.height / 2 - 80; // 사진 높이의 절반
-
+      console.log(collageAreaSize.width, collageAreaSize.height);
       // 현재 최대 z-index 찾기
       const maxZ =
         selectedPhotos.length > 0
@@ -365,8 +366,21 @@ export default function ArchiveScreen() {
     });
   };
 
-  // 크기 조절 및 회전을 위한 PanResponder 생성 함수
-  const createResizeRotatePanResponder = (id: number) => {
+  const handleResizeRotateUpdate = (
+    id: number,
+    rotation: number,
+    scale: number
+  ) => {
+    setSelectedPhotos((prev) => {
+      const newPhotos = [...prev];
+      newPhotos[newPhotos.findIndex((photo) => photo.id === id)].rotation =
+        rotation;
+      newPhotos[newPhotos.findIndex((photo) => photo.id === id)].scale = scale;
+      return newPhotos;
+    });
+  };
+
+  const createResizeRotatePanResponder = (id: number, photo: Photo) => {
     // 현재 회전 및 크기 값을 저장할 변수
     let currentRotation = 0;
     let currentScale = 1;
@@ -374,18 +388,14 @@ export default function ArchiveScreen() {
     return PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onPanResponderGrant: () => {
-        if (activePhotoId === id) {
-          const photo = selectedPhotos.find(
-            (photo) => photo.id === id
-          ) as Photo;
-
+        if (photo.id === id) {
           // 현재 사진의 회전 및 크기 값 저장
           currentRotation = photo.rotation;
           currentScale = photo.scale;
 
           // 사진의 중심점 계산
-          const centerX = photo.position.x + 90; // 180/2
-          const centerY = photo.position.y + 90; // 180/2
+          const centerX = photo.position.x + (photo.width || 160) / 2; // 180/2
+          const centerY = photo.position.y + (photo.height || 160) / 2; // 180/2
 
           // 핸들의 위치 계산 (오른쪽 하단 코너)
           const handleOffsetX = 90 * photo.scale;
@@ -414,12 +424,10 @@ export default function ArchiveScreen() {
             initialRotation: photo.rotation,
             initialScale: photo.scale,
           };
-
-          setResizeMode("resize-rotate");
         }
       },
       onPanResponderMove: (_, gestureState) => {
-        if (activePhotoId === id && photoAnimations[id]) {
+        if (photo.id === id) {
           // 현재 드래그 위치
           const dragX = dragStartRef.current.x + gestureState.dx;
           const dragY = dragStartRef.current.y + gestureState.dy;
@@ -467,26 +475,10 @@ export default function ArchiveScreen() {
           // 현재 값 업데이트
           currentRotation = newRotation;
           currentScale = newScale;
-
+          //handleResizeRotateUpdate(id, currentRotation, currentScale);
           // 애니메이션 값 업데이트 - 실시간으로 UI 반영
-          photoAnimations[id].rotation.setValue(newRotation);
-          photoAnimations[id].scale.setValue(newScale);
-        }
-      },
-      onPanResponderRelease: () => {
-        if (activePhotoId === id && photoAnimations[id]) {
-          // 드래그 종료 시 최종 상태 업데이트 (저장된 값 사용)
-          setSelectedPhotos((prev) => {
-            const newPhotos = [...prev];
-            newPhotos[
-              newPhotos.findIndex((photo) => photo.id === id)
-            ].rotation = currentRotation;
-            newPhotos[newPhotos.findIndex((photo) => photo.id === id)].scale =
-              currentScale;
-            return newPhotos;
-          });
-
-          setResizeMode("none");
+          //photoAnimations[id].rotation.setValue(newRotation);
+          //photoAnimations[id].scale.setValue(newScale);
         }
       },
     });
@@ -990,7 +982,7 @@ export default function ArchiveScreen() {
         >
           {/* Edit Mode Controls with Animation */}
           <Animated.View
-            className="relative mb-4 z-[10001] mr-4 mt-2"
+            className="relative mb-0 z-[10001] mr-4 mt-0"
             style={{
               opacity: fadeAnim,
               transform: [
@@ -1001,7 +993,7 @@ export default function ArchiveScreen() {
                   }),
                 },
               ],
-              height: 40, // 버튼 컨테이너 높이 설정
+              height: 0, // 버튼 컨테이너 높이 설정
             }}
           >
             {/* Background Button */}
@@ -1108,8 +1100,8 @@ export default function ArchiveScreen() {
                 <View className="w-full h-full">
                   {selectedPhotos.map((photo, index) => {
                     const panResponder = createPanResponder(index, photo);
-                    const resizeRotatePanResponder =
-                      createResizeRotatePanResponder(photo.id);
+                    // const resizeRotatePanResponder =
+                    //   createResizeRotatePanResponder(photo.id);
                     const isActive = activePhotoIndex === index;
                     const { width, height } =
                       photo.name === "sticker"
@@ -1132,6 +1124,21 @@ export default function ArchiveScreen() {
                           shadowOffset: { width: 2, height: 2 },
                           shadowOpacity: 0.6,
                           shadowRadius: 3,
+                          transform: [
+                            {
+                              rotate:
+                                photoAnimations[photo.id]?.rotation.interpolate(
+                                  {
+                                    inputRange: [-360, 360],
+                                    outputRange: ["-360deg", "360deg"],
+                                  }
+                                ) || `${photo.rotation}deg`,
+                            },
+                            {
+                              scale:
+                                photoAnimations[photo.id]?.scale || photo.scale,
+                            },
+                          ],
                         }}
                       >
                         <TouchableOpacity
@@ -1144,22 +1151,6 @@ export default function ArchiveScreen() {
                               : {})}
                             className="w-full h-full rounded-lg overflow-hidden"
                             style={{
-                              transform: [
-                                {
-                                  rotate:
-                                    photoAnimations[
-                                      photo.id
-                                    ]?.rotation.interpolate({
-                                      inputRange: [-360, 360],
-                                      outputRange: ["-360deg", "360deg"],
-                                    }) || `${photo.rotation}deg`,
-                                },
-                                {
-                                  scale:
-                                    photoAnimations[photo.id]?.scale ||
-                                    photo.scale,
-                                },
-                              ],
                               width: width || 160,
                               height: height || 160,
                               borderWidth:
@@ -1190,14 +1181,15 @@ export default function ArchiveScreen() {
                         {/* 크기 조절 및 회전 핸들 컴포넌트 - 편집 모드일 때만 표시 */}
                         {mode === "edit" && (
                           <ResizeRotateHandle
-                            isActive={isActive}
-                            photoIndex={index}
                             photo={photo}
-                            //width={width}
-                            //height={height}
-                            photoAnimations={photoAnimations}
-                            panResponder={resizeRotatePanResponder}
-                            onDelete={handleDeletePhoto}
+                            isActive={isActive}
+                            onUpdate={(rotation, scale) =>
+                              handleResizeRotateUpdate(
+                                photo.id,
+                                rotation,
+                                scale
+                              )
+                            }
                           />
                         )}
                       </View>
@@ -1205,7 +1197,7 @@ export default function ArchiveScreen() {
                   })}
                 </View>
               ) : (
-                <View className="items-center justify-center p-8 h-full">
+                <View className="items-center justify-center p-8 h-full bg-red-500">
                   <ThemedText className="text-gray-400">
                     {mode === "edit"
                       ? "사진을 추가하여 콜라주를 만들어보세요"
