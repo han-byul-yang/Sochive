@@ -1,6 +1,8 @@
 import { Animated, Text, TouchableOpacity, View } from "react-native";
 import Box from ".";
 import { Picker } from "@react-native-picker/picker";
+import CustomBottomSheet from "../BottomSheet";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface DateSelectProps {
   setShowDatePicker: React.Dispatch<React.SetStateAction<boolean>>;
@@ -27,19 +29,28 @@ export default function DateSelect({
   setTempDay,
   setSelectedDate,
 }: DateSelectProps) {
-  // 닫기
-  const closeDateBox = () => {
-    Animated.timing(slideAnim, {
-      toValue: 0,
-      duration: 250,
-      useNativeDriver: true,
-    }).start(() => setShowDatePicker(false));
+  const { isDarkMode } = useTheme();
+
+  const handlePointChange = (index: number) => {
+    if (index === -1) {
+      setShowDatePicker(false);
+    }
   };
 
   return (
-    <Box closeBox={closeDateBox} pan={pan} slideAnim={slideAnim}>
+    <CustomBottomSheet
+      snapPoints={["50%"]}
+      onChange={handlePointChange}
+      close
+      isBackground
+      onBackgroundPress={() => setShowDatePicker(false)}
+    >
       <View className="px-4">
-        <Text className="text-center text-lg font-bold text-gray-900 mb-6">
+        <Text
+          className={`text-center text-lg font-bold ${
+            isDarkMode ? "text-gray-300" : "text-gray-800"
+          } mb-6`}
+        >
           날짜 선택
         </Text>
         {/* 년, 월, 일 선택 */}
@@ -102,6 +113,6 @@ export default function DateSelect({
         {/* 추가 하단 여백 */}
         <View className="h-4" />
       </View>
-    </Box>
+    </CustomBottomSheet>
   );
 }

@@ -65,6 +65,7 @@ import StickerSelects from "@/components/StickerSelects";
 import { STICKER_CATEGORIES, SAMPLE_STICKERS } from "@/constants/Stickers";
 import PhotoActionButton from "@/components/PhotoActionButton";
 import ResizeRotateHandle2 from "@/components/ResizeRotateHandle2";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export default function ArchiveScreen() {
   const [mode, setMode] = useState<"read" | "edit">("read");
@@ -130,6 +131,7 @@ export default function ArchiveScreen() {
   );
   const dateNow = Date.now();
   const date = new Date();
+  const { isDarkMode } = useTheme();
 
   // 월 이름 가져오기 함수 추가
   const getMonthName = (month: number) => MONTHS[month - 1];
@@ -809,7 +811,7 @@ export default function ArchiveScreen() {
   };
 
   return (
-    <View className="flex-1 bg-white">
+    <View className={`flex-1 ${isDarkMode ? "bg-[#121212]" : "bg-white"}`}>
       {/* 로딩 인디케이터 */}
       {(isPhotosLoading ||
         isPhotosFetching ||
@@ -837,14 +839,22 @@ export default function ArchiveScreen() {
       <View className="flex-1 relative">
         {/* Header */}
         <TouchableWithoutFeedback onPress={() => toggleActionSheet(false)}>
-          <View className="flex-row items-center justify-between h-[60px] px-4 border-b border-gray-100">
+          <View
+            className={`flex-row items-center justify-between h-[60px] px-4 border-b ${
+              isDarkMode ? "border-gray-600" : "border-gray-100"
+            }`}
+          >
             <TouchableOpacity
               onPress={() => setShowDatePicker(true)}
               activeOpacity={0.9}
               className="flex-row items-center"
             >
               <View className="flex-row items-center">
-                <ThemedText className="text-2xl font-dohyeon text-key">
+                <ThemedText
+                  className={`text-2xl font-dohyeon ${
+                    isDarkMode ? "text-white" : "text-key"
+                  }`}
+                >
                   {getMonthName(selectedMonth)}
                 </ThemedText>
                 <Image
@@ -858,7 +868,7 @@ export default function ArchiveScreen() {
                 <IconSymbol
                   name="chevron.right"
                   size={18}
-                  color="#3D3D3D"
+                  color={isDarkMode ? "#9ca3af" : "#3D3D3D"}
                   style={{
                     transform: [{ rotate: "90deg" }],
                     marginLeft: 8,
@@ -909,14 +919,12 @@ export default function ArchiveScreen() {
                 <TouchableOpacity
                   onPress={handleModeToggle}
                   activeOpacity={0.9}
-                  className={`p-[8px] rounded-full ${
-                    mode === "edit" ? "bg-key" : "bg-gray-100"
-                  }`}
+                  className={`p-[8px] rounded-full bg-gray-100`}
                 >
                   <Feather
                     name={mode === "edit" ? "x" : "file-plus"}
                     size={22}
-                    color={mode === "edit" ? "#fff" : "#3D3D3D"}
+                    color={"#3D3D3D"}
                   />
                 </TouchableOpacity>
               </Animated.View>
@@ -1069,7 +1077,11 @@ export default function ArchiveScreen() {
             <View
               ref={collageAreaRef}
               className={`bg-white/90 rounded-2xl relative ${
-                selectedPhotos.length > 0 ? "bg-transparent" : "bg-white/80"
+                selectedPhotos.length > 0
+                  ? "bg-transparent"
+                  : isDarkMode
+                  ? "bg-transparent"
+                  : "bg-white/80"
               }`}
               style={{
                 height: 200,

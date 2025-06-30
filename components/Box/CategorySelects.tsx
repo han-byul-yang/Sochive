@@ -15,6 +15,7 @@ import { useRef, useState } from "react";
 import Box from ".";
 import BottomSheet from "@gorhom/bottom-sheet";
 import CustomBottomSheet from "../BottomSheet";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export const CATEGORIES = [
   { id: "health", name: "Health", icon: "favorite" },
@@ -63,6 +64,7 @@ export default function CategorySelects({
 }: CategorySelectsProps) {
   const [currentSnapPoint, setCurrentSnapPoint] = useState(1);
   const { height: screenHeight } = useWindowDimensions();
+  const { isDarkMode } = useTheme();
 
   const handlePointChange = (index: number) => {
     setCurrentSnapPoint(index);
@@ -85,7 +87,11 @@ export default function CategorySelects({
       isBackground
       onBackgroundPress={() => setShowCategoryBox(false)}
     >
-      <Text className="text-center text-lg font-bold text-gray-900 mb-6">
+      <Text
+        className={`text-center text-lg font-bold ${
+          isDarkMode ? "text-gray-300" : "text-gray-800"
+        } mb-6`}
+      >
         카테고리 선택
       </Text>
       <View
@@ -105,9 +111,21 @@ export default function CategorySelects({
                 onPress={() => handleCategoryPress(cat.name)}
                 className="flex-row items-center px-4 py-3 rounded-2xl mb-3 border mx-2"
                 style={{
-                  backgroundColor: selected ? SELECTED_BG : UNSELECTED_BG,
+                  backgroundColor: selected
+                    ? isDarkMode
+                      ? "#333333"
+                      : SELECTED_BG
+                    : isDarkMode
+                    ? "#222222"
+                    : UNSELECTED_BG,
                   borderWidth: 1,
-                  borderColor: selected ? SELECTED_BORDER : UNSELECTED_BORDER,
+                  borderColor: selected
+                    ? isDarkMode
+                      ? "#6b7280"
+                      : SELECTED_BORDER
+                    : isDarkMode
+                    ? "#222222"
+                    : UNSELECTED_BORDER,
                   shadowColor: "#000",
                   shadowOffset: { width: 0, height: 2 },
                   shadowOpacity: selected ? 0.08 : 0.03,
@@ -120,6 +138,8 @@ export default function CategorySelects({
                   style={{
                     backgroundColor: selected
                       ? SELECTED_ICON_BG
+                      : isDarkMode
+                      ? "#a9a9a9"
                       : UNSELECTED_ICON_BG,
                     shadowColor: "#000",
                     shadowOffset: { width: 0, height: 1 },
@@ -130,13 +150,23 @@ export default function CategorySelects({
                   <MaterialIcons
                     name={cat.icon as CategoryIconName}
                     size={22}
-                    color={selected ? SELECTED_ICON : UNSELECTED_ICON}
+                    color={
+                      selected
+                        ? SELECTED_ICON
+                        : isDarkMode
+                        ? "#4d4c4c"
+                        : UNSELECTED_ICON
+                    }
                   />
                 </View>
                 <Text
                   className="ml-4 text-base font-medium"
                   style={{
-                    color: selected ? SELECTED_TEXT : UNSELECTED_TEXT,
+                    color: selected
+                      ? isDarkMode
+                        ? "#E2DFD0"
+                        : SELECTED_TEXT
+                      : UNSELECTED_TEXT,
                   }}
                 >
                   {cat.name}

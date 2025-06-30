@@ -7,14 +7,18 @@ import { IconSymbol } from "@/components/ui/IconSymbol";
 import TabBarBackground from "@/components/ui/TabBarBackground";
 import { Colors } from "@/constants/Colors";
 import { useColorScheme } from "@/hooks/useColorScheme";
+import { useTheme } from "@/contexts/ThemeContext";
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const { isDarkMode } = useTheme();
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
+        tabBarActiveTintColor: isDarkMode
+          ? "#E2DFD0"
+          : Colors[colorScheme ?? "light"].tint,
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarBackground: TabBarBackground,
@@ -23,7 +27,7 @@ export default function TabLayout() {
           elevation: 0,
           paddingTop: 8,
           borderTopWidth: 0,
-          backgroundColor: "#fcfcfc",
+          backgroundColor: isDarkMode ? "#121212" : "#fff",
         },
         // tabBarStyle: Platform.select({
         //   ios: {

@@ -14,6 +14,7 @@ import {
   BACKGROUND_CATEGORIES,
   SAMPLE_BACKGROUNDS,
 } from "@/constants/Backgrounds";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface BackgroundSelectsProps {
   showBackgroundPicker: boolean;
@@ -34,6 +35,7 @@ export default function BackgroundSelects({
   setSelectedBackground,
   toggleBackgroundPicker,
 }: BackgroundSelectsProps) {
+  const { isDarkMode } = useTheme();
   useEffect(() => {
     Animated.timing(backgroundPickerAnim, {
       toValue: showBackgroundPicker ? 1 : 0,
@@ -44,7 +46,9 @@ export default function BackgroundSelects({
 
   return (
     <Animated.View
-      className="absolute left-0 right-0 bottom-0 bg-white border-t border-gray-100"
+      className={`absolute left-0 right-0 bottom-0 ${
+        isDarkMode ? "bg-[#2b2b2b]" : "bg-white"
+      } border-t border-gray-100`}
       style={{
         transform: [
           {
@@ -59,7 +63,11 @@ export default function BackgroundSelects({
       }}
     >
       {/* Background Categories */}
-      <View className="flex-row items-center border-b border-gray-100">
+      <View
+        className={`flex-row items-center border-b ${
+          isDarkMode ? "border-gray-600" : "border-gray-100"
+        }`}
+      >
         {/* Close Button */}
         <TouchableOpacity
           onPress={toggleBackgroundPicker}
@@ -94,6 +102,8 @@ export default function BackgroundSelects({
                 className={`ml-1 ${
                   activeCategory === category.id
                     ? "text-gray-800 font-medium"
+                    : isDarkMode
+                    ? "text-gray-300"
                     : "text-gray-500"
                 }`}
               >

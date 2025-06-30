@@ -1,6 +1,7 @@
 import React, { useCallback, useMemo, useRef } from "react";
 import { View, StyleSheet, TouchableOpacity, Pressable } from "react-native";
 import BottomSheet, { BottomSheetView } from "@gorhom/bottom-sheet";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface Props {
   children: React.ReactNode;
@@ -21,9 +22,9 @@ export default function CustomBottomSheet({
   onBackgroundPress,
   isBackground,
 }: Props) {
+  const { isDarkMode } = useTheme();
   // ref
   const bottomSheetRef = useRef<BottomSheet>(null);
-
   // variables
   const snapPoints = useMemo(
     () => customSnapPoints ?? ["5%", "25%", "50%", "90%"],
@@ -49,6 +50,9 @@ export default function CustomBottomSheet({
           duration: 300,
         }}
         enablePanDownToClose={close}
+        backgroundStyle={{
+          backgroundColor: isDarkMode ? "#2b2b2b" : "white",
+        }}
       >
         <BottomSheetView className="flex-1">{children}</BottomSheetView>
       </BottomSheet>

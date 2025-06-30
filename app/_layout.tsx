@@ -37,6 +37,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { auth } from "@/lib/firebase";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ThemeProvider as CustomThemeProvider } from "@/contexts/ThemeContext";
 
 const queryClient = new QueryClient();
 
@@ -164,18 +165,22 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <RecoilRoot>
-          <ThemeProvider
-            value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
-          >
-            <GestureHandlerRootView style={{ flex: 1 }}>
-              <SafeAreaView className="flex-1 bg-[#fcfcfc]">
-                <RootLayoutNav />
-                <StatusBar style={colorScheme === "dark" ? "light" : "dark"} />
-              </SafeAreaView>
-            </GestureHandlerRootView>
-          </ThemeProvider>
-        </RecoilRoot>
+        <CustomThemeProvider>
+          <RecoilRoot>
+            <ThemeProvider
+              value={colorScheme === "dark" ? DarkTheme : DefaultTheme}
+            >
+              <GestureHandlerRootView style={{ flex: 1 }}>
+                <SafeAreaView className="flex-1 bg-[#fcfcfc]">
+                  <RootLayoutNav />
+                  <StatusBar
+                    style={colorScheme === "dark" ? "light" : "dark"}
+                  />
+                </SafeAreaView>
+              </GestureHandlerRootView>
+            </ThemeProvider>
+          </RecoilRoot>
+        </CustomThemeProvider>
       </AuthProvider>
     </QueryClientProvider>
   );

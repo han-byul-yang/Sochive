@@ -3,6 +3,7 @@ import { ThemedText } from "../ThemedText";
 import { IconSymbol } from "../ui/IconSymbol";
 import { useMemo } from "react";
 import { MONTH_EMOJIS, MONTHS } from "@/constants/Months";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface DatePickerModalProps {
   showDatePicker: boolean;
@@ -24,6 +25,7 @@ export default function DatePickerModal({
   setMode,
 }: DatePickerModalProps) {
   const getMonthName = (month: number) => MONTHS[month - 1];
+  const { isDarkMode } = useTheme();
 
   // 월 목록 생성
   const months = useMemo(() => {
@@ -42,23 +44,43 @@ export default function DatePickerModal({
         activeOpacity={1}
         onPress={() => setShowDatePicker(false)}
       >
-        <View className="mt-32 mx-4 bg-white rounded-2xl overflow-hidden">
+        <View
+          className={`mt-32 mx-4 bg-white rounded-2xl overflow-hidden ${
+            isDarkMode ? "bg-[#121212]" : "bg-white"
+          }`}
+        >
           {/* Year Selector */}
-          <View className="flex-row items-center justify-between px-6 py-4 border-b border-gray-100">
+          <View
+            className={`flex-row items-center justify-between px-6 py-4 border-b ${
+              isDarkMode ? "border-gray-600" : "border-gray-100"
+            }`}
+          >
             <TouchableOpacity
               onPress={() => setSelectedYear(selectedYear - 1)}
               className="p-2"
             >
-              <IconSymbol name="chevron.left" size={18} color="#212121" />
+              <IconSymbol
+                name="chevron.left"
+                size={18}
+                color={isDarkMode ? "#E2DFD0" : "#212121"}
+              />
             </TouchableOpacity>
-            <ThemedText className="text-2xl font-gaegu">
+            <ThemedText
+              className={`text-2xl font-gaegu ${
+                isDarkMode ? "text-[#E2DFD0]" : "text-key"
+              }`}
+            >
               {selectedYear}
             </ThemedText>
             <TouchableOpacity
               onPress={() => setSelectedYear(selectedYear + 1)}
               className="p-2"
             >
-              <IconSymbol name="chevron.right" size={18} color="#212121" />
+              <IconSymbol
+                name="chevron.right"
+                size={18}
+                color={isDarkMode ? "#E2DFD0" : "#212121"}
+              />
             </TouchableOpacity>
           </View>
 
@@ -77,12 +99,16 @@ export default function DatePickerModal({
                 >
                   <View
                     className={`py-3 rounded-xl items-center flex-row justify-center ${
-                      selectedMonth === month ? "bg-key" : "bg-gray-50"
+                      selectedMonth === month
+                        ? `bg-${isDarkMode ? "white" : "key"}`
+                        : `bg-${isDarkMode ? "key" : "white"}`
                     }`}
                   >
                     <ThemedText
                       className={`text-base font-dohyeon ${
-                        selectedMonth === month ? "text-white" : "text-key"
+                        selectedMonth === month
+                          ? `text-${isDarkMode ? "key" : "white"}`
+                          : `text-${isDarkMode ? "white" : "gray-50"}`
                       }`}
                     >
                       {getMonthName(month).slice(0, 3)}

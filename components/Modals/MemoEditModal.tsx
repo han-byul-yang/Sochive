@@ -22,6 +22,7 @@ import CategorySelects, {
 import DateSelect from "../Box/DateSelect";
 import { useCreateMemo, useUpdateMemo } from "@/hooks/useGetMemos";
 import { MemoDocData } from "@/types";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface MemoEditModalProps {
   showMemoModal: boolean;
@@ -58,6 +59,7 @@ export default function MemoEditModal({
   const { mutate: createMemoMutate } = useCreateMemo(photoDocId, photoId);
   const { mutate: updateMemoMutate } = useUpdateMemo(photoDocId, photoId);
   const starRefs = useRef(Array.from({ length: 5 }, () => createRef<View>()));
+  const { isDarkMode } = useTheme();
 
   useEffect(() => {
     if (memoData) {
@@ -194,22 +196,32 @@ export default function MemoEditModal({
         enableAutomaticScroll={true}
         bounces={false}
       >
-        <SafeAreaView style={{ flex: 1, backgroundColor: "#fff" }}>
+        <SafeAreaView
+          style={{ flex: 1, backgroundColor: isDarkMode ? "#151515" : "#fff" }}
+        >
           {/* Modal Header */}
-          <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-100">
+          <View
+            className={`flex-row items-center justify-between px-4 py-3 border-b ${
+              isDarkMode ? "border-gray-500" : "border-gray-100"
+            }`}
+          >
             <TouchableOpacity
               onPress={() => setShowMemoModal(false)}
               className="p-2 -ml-2"
             >
-              <Text className="text-blue-500 font-medium">취소</Text>
+              <Text className="text-[#5d836e] font-medium">취소</Text>
             </TouchableOpacity>
 
-            <Text className="text-lg font-semibold text-gray-900">
+            <Text
+              className={`text-lg font-semibold ${
+                isDarkMode ? "text-gray-300" : "text-gray-800"
+              }`}
+            >
               메모 편집
             </Text>
 
             <TouchableOpacity onPress={handleSaveMemo} className="p-2 -mr-2">
-              <Text className="text-blue-500 font-medium">저장</Text>
+              <Text className="text-[#5d836e] font-medium">저장</Text>
             </TouchableOpacity>
           </View>
 
@@ -221,12 +233,20 @@ export default function MemoEditModal({
           >
             {/* 카테고리 섹션 */}
             <View style={{ marginBottom: 24 }}>
-              <Text className="text-gray-800 font-semibold mb-3 text-base">
+              <Text
+                className={`font-semibold mb-3 text-base ${
+                  isDarkMode ? "text-gray-300" : "text-gray-800"
+                }`}
+              >
                 카테고리
               </Text>
               <TouchableOpacity
                 onPress={openCategoryBox}
-                className="flex-row items-center p-4 bg-gray-50 rounded-2xl border border-gray-200 justify-between"
+                className={`flex-row items-center p-4 rounded-2xl border justify-between ${
+                  isDarkMode
+                    ? "bg-[#222222] border-gray-500"
+                    : "bg-gray-50 border-gray-200"
+                }`}
               >
                 <View style={{ flexDirection: "row", alignItems: "center" }}>
                   <MaterialIcons
@@ -237,7 +257,13 @@ export default function MemoEditModal({
                     size={20}
                     color="#6B7280"
                   />
-                  <Text style={{ marginLeft: 12, fontSize: 16, color: "#222" }}>
+                  <Text
+                    style={{
+                      marginLeft: 12,
+                      fontSize: 16,
+                      color: isDarkMode ? "#E2DFD0" : "#222",
+                    }}
+                  >
                     {category}
                   </Text>
                 </View>
@@ -251,15 +277,27 @@ export default function MemoEditModal({
 
             {/* 날짜 섹션 */}
             <View className="mb-6">
-              <Text className="text-gray-800 font-semibold mb-3 text-base">
+              <Text
+                className={`font-semibold mb-3 text-base ${
+                  isDarkMode ? "text-gray-300" : "text-gray-800"
+                }`}
+              >
                 날짜
               </Text>
               <TouchableOpacity
                 onPress={openDatePicker}
-                className="flex-row items-center p-4 bg-gray-50 rounded-2xl border border-gray-200 justify-between"
+                className={`flex-row items-center p-4 rounded-2xl border justify-between ${
+                  isDarkMode
+                    ? "bg-[#222222] border-gray-500"
+                    : "bg-gray-50 border-gray-200"
+                }`}
                 activeOpacity={0.8}
               >
-                <Text className="text-base text-gray-900">
+                <Text
+                  className={`text-base ${
+                    isDarkMode ? "text-gray-300" : "text-gray-800"
+                  }`}
+                >
                   {formatDate(selectedDate)}
                 </Text>
                 <MaterialIcons
@@ -272,16 +310,28 @@ export default function MemoEditModal({
 
             {/* 장소 섹션 */}
             <View className="mb-6">
-              <Text className="text-gray-800 font-semibold mb-3 text-base">
+              <Text
+                className={`font-semibold mb-3 text-base ${
+                  isDarkMode ? "text-gray-300" : "text-gray-800"
+                }`}
+              >
                 장소
               </Text>
-              <View className="flex-row items-center p-4 bg-gray-50 rounded-2xl border border-gray-200">
+              <View
+                className={`flex-row items-center p-4 rounded-2xl border ${
+                  isDarkMode
+                    ? "bg-[#222222] border-gray-500"
+                    : "bg-gray-50 border-gray-200"
+                }`}
+              >
                 <MaterialIcons name="location-on" size={20} color="#6B7280" />
                 <TextInput
                   value={location}
                   onChangeText={setLocation}
                   placeholder="장소를 입력하세요"
-                  className="flex-1 ml-3 text-base"
+                  className={`flex-1 ml-3 text-base ${
+                    isDarkMode ? "text-gray-300" : "text-gray-800"
+                  }`}
                   placeholderTextColor="#9CA3AF"
                 />
               </View>
@@ -289,15 +339,29 @@ export default function MemoEditModal({
 
             {/* 별점 섹션 */}
             <View className="mb-6">
-              <Text className="text-gray-800 font-semibold mb-3 text-base">
+              <Text
+                className={`font-semibold mb-3 text-base ${
+                  isDarkMode ? "text-gray-300" : "text-gray-800"
+                }`}
+              >
                 별점
               </Text>
-              <View className="bg-gray-50 rounded-2xl p-4 border border-gray-200">
+              <View
+                className={`rounded-2xl p-4 border ${
+                  isDarkMode
+                    ? "bg-[#222222] border-gray-500"
+                    : "bg-gray-50 border-gray-200"
+                }`}
+              >
                 <View className="flex-row items-center justify-between">
                   <View className="flex-row items-center">
                     {renderInteractiveStars()}
                   </View>
-                  <Text className="text-gray-700 font-medium text-lg ml-3">
+                  <Text
+                    className={`font-medium text-lg ml-3 ${
+                      isDarkMode ? "text-gray-300" : "text-gray-800"
+                    }`}
+                  >
                     {rating.toFixed(1)}
                   </Text>
                 </View>
@@ -309,14 +373,22 @@ export default function MemoEditModal({
 
             {/* 제목 섹션 */}
             <View className="mb-6">
-              <Text className="text-gray-800 font-semibold mb-3 text-base">
+              <Text
+                className={`font-semibold mb-3 text-base ${
+                  isDarkMode ? "text-gray-300" : "text-gray-800"
+                }`}
+              >
                 제목
               </Text>
               <TextInput
                 value={title}
                 onChangeText={setTitle}
                 placeholder="제목을 입력하세요"
-                className="p-4 bg-gray-50 rounded-2xl text-base border border-gray-200"
+                className={`p-4 rounded-2xl text-base border ${
+                  isDarkMode
+                    ? "bg-[#222222] border-gray-500 text-gray-300"
+                    : "bg-gray-50 border-gray-200"
+                }`}
                 placeholderTextColor="#9CA3AF"
                 multiline
               />
@@ -324,7 +396,11 @@ export default function MemoEditModal({
 
             {/* 내용 섹션 */}
             <View className="mb-6">
-              <Text className="text-gray-800 font-semibold mb-3 text-base">
+              <Text
+                className={`font-semibold mb-3 text-base ${
+                  isDarkMode ? "text-gray-300" : "text-gray-800"
+                }`}
+              >
                 내용
               </Text>
               <TextInput
@@ -332,7 +408,11 @@ export default function MemoEditModal({
                 onChangeText={setContent}
                 placeholder="소중한 순간에 대한 이야기를 적어보세요..."
                 multiline
-                className="p-4 bg-gray-50 rounded-2xl text-base leading-relaxed border border-gray-200"
+                className={`p-4 rounded-2xl text-base leading-relaxed border ${
+                  isDarkMode
+                    ? "bg-[#222222] border-gray-500 text-gray-300"
+                    : "bg-gray-50 border-gray-200"
+                }`}
                 style={{
                   textAlignVertical: "top",
                   minHeight: 120,
@@ -343,10 +423,20 @@ export default function MemoEditModal({
 
             {/* 태그 섹션 */}
             <View className="mb-6">
-              <Text className="text-gray-800 font-semibold mb-3 text-base">
+              <Text
+                className={`font-semibold mb-3 text-base ${
+                  isDarkMode ? "text-gray-300" : "text-gray-800"
+                }`}
+              >
                 태그
               </Text>
-              <View className="bg-gray-50 rounded-2xl p-4 border border-gray-200">
+              <View
+                className={`rounded-2xl p-4 border ${
+                  isDarkMode
+                    ? "bg-[#222222] border-gray-500"
+                    : "bg-gray-50 border-gray-200"
+                }`}
+              >
                 <View className="flex-row items-center">
                   <MaterialIcons name="local-offer" size={20} color="#6B7280" />
                   <TextInput

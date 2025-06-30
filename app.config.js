@@ -10,6 +10,8 @@ module.exports = {
     ios: {
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
+        NSPhotoLibraryAddUsageDescription:
+          "이 앱은 사진을 저장하기 위해 앨범 접근 권한이 필요합니다.",
       },
       bundleIdentifier: "com.sochive.app",
       supportsTablet: true,
@@ -57,6 +59,10 @@ module.exports = {
     ],
     experiments: {
       typedRoutes: true,
+    },
+
+    cli: {
+      appVersionSource: "appVersion",
     },
 
     extra: {

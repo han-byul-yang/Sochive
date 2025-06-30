@@ -13,6 +13,7 @@ import { MaterialIcons } from "@expo/vector-icons";
 import { STICKER_CATEGORIES, SAMPLE_STICKERS } from "@/constants/Stickers";
 import { Photo } from "@/types";
 import CustomBottomSheet from "./BottomSheet";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface StickerSelectsProps {
   activeCategory: string;
@@ -33,6 +34,7 @@ export default function StickerSelects({
   setActiveCategory,
   setSelectedSticker,
 }: StickerSelectsProps) {
+  const { isDarkMode } = useTheme();
   const [currentSnapPoint, setCurrentSnapPoint] = useState(1);
   const { height: screenHeight } = useWindowDimensions();
   const date = new Date();
@@ -79,7 +81,11 @@ export default function StickerSelects({
       snapPoints={["5%", "25%", "50%", "90%"]}
       onChange={(index) => setCurrentSnapPoint(index)}
     >
-      <View className="flex-row items-center border-b border-gray-100">
+      <View
+        className={`flex-row items-center border-b ${
+          isDarkMode ? "border-gray-600" : "border-gray-100"
+        }`}
+      >
         {/* Close Button */}
         {/*<TouchableOpacity
           onPress={toggleStickerPicker}
@@ -114,6 +120,8 @@ export default function StickerSelects({
                 className={`ml-1 ${
                   activeCategory === category.id
                     ? "text-gray-800 font-medium"
+                    : isDarkMode
+                    ? "text-gray-300"
                     : "text-gray-500"
                 }`}
               >

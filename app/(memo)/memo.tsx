@@ -19,10 +19,12 @@ import MemoEditModal from "@/components/Modals/MemoEditModal";
 import { useGetMemos } from "@/hooks/useGetMemos";
 import { getDates } from "@/utils/getDates";
 import { MemoDocData } from "@/types";
+import { useTheme } from "@/contexts/ThemeContext";
 
 const HEADER_HEIGHT = 300;
 
 export default function Memo() {
+  const { isDarkMode } = useTheme();
   const {
     selectedPhotoUri,
     selectedPhotoCreatedAt,
@@ -153,7 +155,11 @@ export default function Memo() {
 
   return (
     <SafeAreaView className="flex-1 relative">
-      <View className="flex-1 h-full relative">
+      <View
+        className={`flex-1 h-full relative ${
+          isDarkMode ? "bg-[#232323]" : "bg-white"
+        }`}
+      >
         <Animated.ScrollView
           scrollEventThrottle={16}
           onScroll={Animated.event(
@@ -250,7 +256,9 @@ export default function Memo() {
               className="h-[500px]"
             >
               <View
-                className="bg-white h-full rounded-3xl p-5 shadow-md shadow-black/20"
+                className={`h-full rounded-3xl p-5 shadow-md shadow-black/20 ${
+                  isDarkMode ? "bg-[#232323]" : "bg-white"
+                }`}
                 style={{
                   shadowOffset: { width: 0, height: -40 },
                   shadowOpacity: 0.3,
@@ -259,8 +267,12 @@ export default function Memo() {
               >
                 {isLoading || isFetching ? (
                   <View className="mt-10 items-center justify-center">
-                    <ActivityIndicator size="large" color="#3498db" />
-                    <Text className="mt-3 text-gray-700 font-medium">
+                    <ActivityIndicator size="large" color="#5d836e" />
+                    <Text
+                      className={`mt-3 font-medium ${
+                        isDarkMode ? "text-gray-300" : "text-gray-700"
+                      }`}
+                    >
                       메모를 불러오는 중...
                     </Text>
                   </View>
@@ -274,9 +286,13 @@ export default function Memo() {
                           <MaterialIcons
                             name="location-on"
                             size={14}
-                            color="#122e26"
+                            color={isDarkMode ? "#E2DFD0" : "#122e26"}
                           />
-                          <Text className="text-[#122e26] font-medium text-base font-dohyeon ml-1">
+                          <Text
+                            className={`font-medium text-base font-dohyeon ml-1 ${
+                              isDarkMode ? "text-gray-300" : "text-[#122e26]"
+                            }`}
+                          >
                             {memoData?.[0]?.location}
                           </Text>
                         </View>
@@ -319,7 +335,11 @@ export default function Memo() {
                     ) : (
                       <View className="mb-4">
                         <View className="flex-row flex-wrap">
-                          <View className="bg-gray-100 px-3 py-1.5 rounded-full">
+                          <View
+                            className={`px-3 py-1.5 rounded-full ${
+                              isDarkMode ? "bg-gray-200" : "bg-gray-100"
+                            }`}
+                          >
                             <Text className="text-gray-400 font-medium text-sm">
                               태그 없음
                             </Text>
@@ -331,10 +351,18 @@ export default function Memo() {
                     {/* 메모 내용 */}
                     {memoData?.[0]?.memo ? (
                       <View className="border-t-[1px] border-gray-200 pt-4">
-                        <Text className="text-xl font-bold text-gray-900 mb-3">
+                        <Text
+                          className={`text-xl font-bold ${
+                            isDarkMode ? "text-gray-300" : "text-gray-900"
+                          } mb-3`}
+                        >
                           {memoData?.[0]?.title}
                         </Text>
-                        <Text className="text-gray-600 text-base leading-relaxed mb-4">
+                        <Text
+                          className={`text-base leading-relaxed mb-4 ${
+                            isDarkMode ? "text-gray-400" : "text-gray-600"
+                          }`}
+                        >
                           {memoData?.[0]?.memo}
                         </Text>
                       </View>

@@ -25,6 +25,7 @@ import {
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useTheme } from "@/contexts/ThemeContext";
 
 interface SettingItemProps {
   icon: any;
@@ -45,25 +46,49 @@ function SettingItem({
   showArrow,
   color = "#000",
 }: SettingItemProps) {
+  const { isDarkMode } = useTheme();
+
   return (
     <TouchableOpacity onPress={onPress}>
       <View className="flex-row items-center justify-between py-4">
         <View className="flex-row items-center space-x-3">
-          <MaterialIcons name={icon} size={24} color={color} />
-          <ThemedText className="text-base">{label}</ThemedText>
+          <MaterialIcons
+            name={icon}
+            size={24}
+            color={isDarkMode ? "#E2DFD0" : color}
+          />
+          <ThemedText
+            className={`text-base ${
+              isDarkMode ? "text-[#E2DFD0]" : "text-key"
+            }`}
+          >
+            {label}
+          </ThemedText>
         </View>
         {onValueChange && (
           <Switch
             value={value}
             onValueChange={onValueChange}
-            trackColor={{ false: "#767577", true: "#81b0ff" }}
+            trackColor={{ false: "#767577", true: "#5d836e" }}
             thumbColor={value ? Colors.light.tint : "#f4f3f4"}
           />
         )}
         {showArrow && (
-          <MaterialIcons name="chevron-right" size={24} color="#666" />
+          <MaterialIcons
+            name="chevron-right"
+            size={24}
+            color={isDarkMode ? "#E2DFD0" : "#666"}
+          />
         )}
-        {icon === "info" && <ThemedText>1.0.0</ThemedText>}
+        {icon === "info" && (
+          <ThemedText
+            className={`text-base ${
+              isDarkMode ? "text-[#E2DFD0]" : "text-key"
+            }`}
+          >
+            1.0.0
+          </ThemedText>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -71,6 +96,7 @@ function SettingItem({
 
 export default function SettingsScreen() {
   const { user } = useAuth();
+  const { isDarkMode, toggleTheme } = useTheme();
   const [showComingSoonModal, setShowComingSoonModal] = useState(false);
   const [comingSoonFeature, setComingSoonFeature] = useState({
     title: "",
@@ -85,6 +111,14 @@ export default function SettingsScreen() {
     setComingSoonFeature({
       title: "프리미엄 서비스",
       feature: "프리미엄",
+    });
+    setShowComingSoonModal(true);
+  };
+
+  const handleImageBackupPress = () => {
+    setComingSoonFeature({
+      title: "이미지 백업",
+      feature: "이미지 백업",
     });
     setShowComingSoonModal(true);
   };
@@ -163,15 +197,54 @@ export default function SettingsScreen() {
   };
 
   return (
-    <View className="flex-1 bg-[#fcfcfc]">
-      <ThemedView className="px-4 pb-2 pt-4">
-        <ThemedText className="text-[20px] font-noto-bold">Settings</ThemedText>
+    <View className={`flex-1 ${isDarkMode ? "bg-[#151515]" : "bg-[#fcfcfc]"}`}>
+      <ThemedView
+        className={`px-4 pb-2 pt-4 ${isDarkMode ? "bg-[#151515]" : "bg-white"}`}
+      >
+        <ThemedText
+          className={`text-[20px] font-noto-bold ${
+            isDarkMode ? "text-[#E2DFD0]" : "text-key"
+          }`}
+        >
+          Settings
+        </ThemedText>
       </ThemedView>
 
       <ScrollView className="px-4 mt-4">
         <View className="mb-6">
-          <ThemedText className="text-sm text-[#3D3D3D] mb-2">구독</ThemedText>
-          <ThemedView className="bg-white rounded-2xl px-4">
+          <ThemedText
+            className={`text-sm ${
+              isDarkMode ? "text-[#85b098]" : "text-[#405b4c]"
+            } mb-2`}
+          >
+            화면 설정
+          </ThemedText>
+          <ThemedView
+            className={`rounded-2xl px-4 ${
+              isDarkMode ? "bg-[#121212]" : "bg-white"
+            }`}
+          >
+            <SettingItem
+              icon="dark-mode"
+              label="다크 모드"
+              value={isDarkMode}
+              onValueChange={toggleTheme}
+            />
+          </ThemedView>
+        </View>
+        <View className="mb-6">
+          <ThemedText
+            className={`text-sm ${
+              isDarkMode ? "text-[#85b098]" : "text-[#405b4c]"
+            } mb-2`}
+          >
+            구독
+          </ThemedText>
+          <ThemedView
+            className={`rounded-2xl px-4 ${
+              isDarkMode ? "bg-[#121212]" : "bg-white"
+            }`}
+          >
             <SettingItem
               icon="workspace-premium"
               showArrow
@@ -180,26 +253,63 @@ export default function SettingsScreen() {
             />
           </ThemedView>
         </View>
+        <View className="mb-6">
+          <ThemedText
+            className={`text-sm ${
+              isDarkMode ? "text-[#85b098]" : "text-[#405b4c]"
+            } mb-2`}
+          >
+            백업
+          </ThemedText>
+          <ThemedView
+            className={`rounded-2xl px-4 ${
+              isDarkMode ? "bg-[#121212]" : "bg-white"
+            }`}
+          >
+            <SettingItem
+              icon="download"
+              label="이미지 백업"
+              showArrow
+              onPress={handleImageBackupPress}
+            />
+          </ThemedView>
+        </View>
 
         <View className="mb-6">
-          <ThemedText className="text-sm text-[#3D3D3D] mb-2">정보</ThemedText>
-          <ThemedView className="bg-white rounded-2xl px-4">
+          <ThemedText
+            className={`text-sm ${
+              isDarkMode ? "text-[#85b098]" : "text-[#405b4c]"
+            } mb-2`}
+          >
+            정보
+          </ThemedText>
+          <ThemedView
+            className={`rounded-2xl px-4 ${
+              isDarkMode ? "bg-[#121212]" : "bg-white"
+            }`}
+          >
             <SettingItem icon="info" label="앱 버전" onPress={() => {}} />
-            <View className="h-[1px] bg-gray-100" />
+            <View
+              className={` bg-gray-100 ${isDarkMode ? "h-[0.4px]" : "h-[1px]"}`}
+            />
             <SettingItem
               icon="mail"
               label="피드백 & 문의"
               showArrow
               onPress={handleFeedbackPress}
             />
-            <View className="h-[1px] bg-gray-100" />
+            <View
+              className={` bg-gray-100 ${isDarkMode ? "h-[0.4px]" : "h-[1px]"}`}
+            />
             <SettingItem
               icon="description"
               label="이용약관"
               showArrow
               onPress={handleTermsOfServicePress}
             />
-            <View className="h-[1px] bg-gray-100" />
+            <View
+              className={` bg-gray-100 ${isDarkMode ? "h-[0.5px]" : "h-[1px]"}`}
+            />
             <SettingItem
               icon="security"
               label="개인정보처리방침"
@@ -209,14 +319,20 @@ export default function SettingsScreen() {
           </ThemedView>
         </View>
 
-        <ThemedView className="bg-white rounded-2xl p-4 mb-6">
+        <ThemedView
+          className={`rounded-2xl p-4 mb-6 ${
+            isDarkMode ? "bg-[#121212]" : "bg-white"
+          }`}
+        >
           <SettingItem
             icon="logout"
             label="로그아웃"
             color="#FF3B30"
             onPress={handleLogout}
           />
-          <View className="h-[1px] bg-gray-100" />
+          <View
+            className={` bg-gray-100 ${isDarkMode ? "h-[0.4px]" : "h-[1px]"}`}
+          />
           <SettingItem
             icon="delete-forever"
             label="회원 탈퇴"
